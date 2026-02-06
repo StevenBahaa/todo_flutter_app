@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:todo_list/core/widgets/task_card.dart';
 import 'package:todo_list/data/models/task_enums.dart' as e;
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
@@ -92,16 +93,10 @@ class _TasksTestScreenState extends State<TasksTestScreen> {
                           final status = e.TasksStatus.values[t.status];
                           final priority = e.TaskPriority.values[t.priority];
 
-                          return ListTile(
-                            title: Text(t.title),
-                            subtitle: Text(
-                              'status: $status | priority: $priority',
-                            ),
-                            trailing: IconButton(
-                              onPressed: () =>
-                                  context.read<TasksCubit>().deleteTask(t.id),
-                              icon: const Icon(Icons.delete),
-                            ),
+                          return TaskCard(
+                            task: t,
+                            onDelete: () =>
+                                context.read<TasksCubit>().deleteTask(t.id),
                           );
                         },
                       ),
