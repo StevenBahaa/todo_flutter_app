@@ -11,7 +11,7 @@ class HiveInit {
       Hive.registerAdapter(TaskModelAdapter());
     }
 
-    await Hive.openBox(HiveBoxs.tasks);
+    await Hive.openBox<TaskModel>(HiveBoxs.tasks);
     await Hive.openBox(HiveBoxs.categories);
     await Hive.openBox(HiveBoxs.prefs);
   }
