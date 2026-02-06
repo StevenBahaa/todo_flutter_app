@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:todo_list/data/local/hive_init.dart';
 import 'package:todo_list/data/repositories/tasks_repository.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
+import 'package:todo_list/features/tasks/view/tasks_list_screen.dart';
 import 'package:todo_list/features/tasks/view/tasks_test_screen.dart';
 
 Future<void> main() async {
@@ -19,10 +20,10 @@ class MyApp extends StatelessWidget {
     return RepositoryProvider(
       create: (_) => TasksRepository(),
       child: BlocProvider(
-        create: (context) => TasksCubit(context.read<TasksRepository>()),
+        create: (context) => TasksCubit(context.read<TasksRepository>())..loadTasks(),
         child: const MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: TasksTestScreen(),
+          home: TasksListScreen(),
         ),
       ),
     );
