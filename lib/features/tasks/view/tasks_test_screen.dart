@@ -90,10 +90,11 @@ class _TasksTestScreenState extends State<TasksTestScreen> {
                         separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final t = tasks[index];
-                          final status = e.TasksStatus.values[t.status];
+                          final status = e.TaskStatus.values[t.status];
                           final priority = e.TaskPriority.values[t.priority];
-
                           return TaskCard(
+                            onToggleDone: () =>
+                                context.read<TasksCubit>().toggleDone(t),
                             task: t,
                             onDelete: () =>
                                 context.read<TasksCubit>().deleteTask(t.id),

@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/data/repositories/tasks_repository.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_state.dart';
@@ -66,6 +68,32 @@ class TasksCubit extends Cubit<TasksState> {
 
     try {
       await _repo.delete(id);
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: TasksStatus.failure,
+          errorMessage: e.toString(),
+          tasks: prev,
+        ),
+      );
+    }
+  }
+
+  Future<void> toggleDone(TaskModel task) async {
+    final prev = state.tasks;
+    final isDone = task.status == TaskStatus.done.index;
+    final updatedTask = task.copyWith(
+      status: isDone ? TaskStatus.todo.index : TaskStatus.done.index,
+    );
+
+    final updatedList = prev
+        .map((t) => t.id == updatedTask.id ? updatedTask : t)
+        .toList();
+
+    emit(state.copyWith(status: TasksStatus.success, tasks: updatedList));
+
+    try {
+      await _repo.update(updatedTask);
     } catch (e) {
       emit(
         state.copyWith(

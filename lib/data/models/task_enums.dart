@@ -1,3 +1,3 @@
-enum TasksStatus { todo, inProgress, done }
+enum TaskStatus { todo, inProgress, done }
 
 enum TaskPriority { low, medium, high }

@@ -62,7 +62,7 @@ class TaskCard extends StatelessWidget {
                   Row(
                     children: [
                       Checkbox(
-                        value: task.status == TasksStatus.done.index,
+                        value: task.status == TaskStatus.done.index,
                         onChanged: (_) => onToggleDone?.call(),
                         activeColor: priorityColor,
                       ),
@@ -73,6 +73,10 @@ class TaskCard extends StatelessWidget {
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            decoration: task.status == TaskStatus.done.index
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                            decorationColor: Colors.white54,
                           ),
                         ),
                       ),

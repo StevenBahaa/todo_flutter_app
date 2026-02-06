@@ -61,7 +61,7 @@ class TaskModel extends HiveObject {
       id: id,
       title: title,
       description: null,
-      status: TasksStatus.todo.index,
+      status: TaskStatus.todo.index,
       priority: priority.index,
       dueDateTime: dueDateTime,
       categoryId: categoryId,
