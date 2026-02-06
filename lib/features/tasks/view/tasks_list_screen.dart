@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:todo_list/core/widgets/task_card.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_state.dart';
+import 'package:todo_list/features/tasks/sheets/quick_add_sheet.dart';
 
 class TasksListScreen extends StatelessWidget {
   const TasksListScreen({super.key});
@@ -40,6 +41,20 @@ class TasksListScreen extends StatelessWidget {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: const Color(0xFF6366F1),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            ),
+            builder: (_) => const QuickAddSheet(),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
