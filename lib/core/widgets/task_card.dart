@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
@@ -30,7 +31,31 @@ class TaskCard extends StatelessWidget {
     }
   }
 
-  String get PriorityLable {
+  bool get isDone => task.status == TaskStatus.done.index;
+
+  bool get isOverdue {
+    final due = task.dueDateTime;
+
+    if (due == null) return false;
+    if (isDone) return false;
+    return due.isBefore(DateTime.now());
+  }
+
+  bool get isDueSoon {
+    final due = task.dueDateTime;
+    if (due == null) return false;
+    if (isDone) return false;
+    final now = DateTime.now();
+    return due.isAfter(now) && due.difference(now).inHours <= 24;
+  }
+
+  Color get dueColor {
+    if (isOverdue) return AppColors.danger;
+    if (isDueSoon) return AppColors.warning;
+    return AppColors.textMuted;
+  }
+
+  String get priorityLable {
     return TaskPriority.values[task.priority].name.toUpperCase();
   }
 
@@ -86,9 +111,30 @@ class TaskCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   if (task.dueDateTime != null)
-                    Text(
-                      _formatTime(task.dueDateTime!),
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 16, color: dueColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatDue(task.dueDateTime!),
+                          style: TextStyle(
+                            color: dueColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (isOverdue) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            "OVERDUE",
+                            style: TextStyle(
+                              color: AppColors.danger,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
 
                   const SizedBox(height: 6),
@@ -130,6 +176,12 @@ class TaskCard extends StatelessWidget {
     );
   }
 
+  String _formatDue(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return "${dt.day}/${dt.month} $h:$m";
+  }
+
   Widget _priorityBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -138,7 +190,7 @@ class TaskCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        PriorityLable,
+        priorityLable,
         style: TextStyle(
           color: priorityColor,
           fontWeight: FontWeight.bold,

@@ -19,6 +19,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
   final _tagController = TextEditingController();
   final List<String> _tags = [];
   final _uuid = const Uuid();
+  DateTime? _dueDateTime;
 
   TaskPriority _priority = TaskPriority.medium;
 
@@ -27,6 +28,41 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
     _tagController.dispose();
     _titleController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDueDateTime() async {
+    final now = DateTime.now();
+
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+      initialDate: _dueDateTime ?? now,
+    );
+
+    if (date == null) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _dueDateTime != null
+          ? TimeOfDay.fromDateTime(_dueDateTime!)
+          : TimeOfDay.fromDateTime(now),
+    );
+
+    if (time == null) {
+      setState(() => _dueDateTime = DateTime(date.year, date.month, date.day));
+      return;
+    }
+
+    setState(() {
+      _dueDateTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
   }
 
   void _addTag() {
@@ -63,6 +99,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       title: title,
       priority: _priority,
       tags: List.unmodifiable(_tags),
+      dueDateTime: _dueDateTime,
     );
 
     context.read<TasksCubit>().createTask(task);
@@ -133,6 +170,19 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
           const SizedBox(height: 12),
           Row(
             children: [
+              OutlinedButton.icon(
+                onPressed: _pickDueDateTime,
+                icon: const Icon(Icons.calendar_today, size: 18),
+                label: Text(
+                  _dueDateTime == null ? "Due" : _formatDue(_dueDateTime!),
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
               _priorityChip(TaskPriority.low, "LOW"),
               const SizedBox(width: 8),
               _priorityChip(TaskPriority.medium, "MED"),
@@ -191,6 +241,12 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
         ],
       ),
     );
+  }
+
+  String _formatDue(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return "${dt.day}/${dt.month} $h:$m";
   }
 
   Widget glassButton({required VoidCallback onPressed, required Widget child}) {
