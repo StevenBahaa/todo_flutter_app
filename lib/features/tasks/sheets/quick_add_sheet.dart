@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:todo_list/core/theme/app_colors.dart';
+import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
@@ -15,14 +16,41 @@ class QuickAddSheet extends StatefulWidget {
 
 class _QuickAddSheetState extends State<QuickAddSheet> {
   final _titleController = TextEditingController();
+  final _tagController = TextEditingController();
+  final List<String> _tags = [];
   final _uuid = const Uuid();
 
   TaskPriority _priority = TaskPriority.medium;
 
   @override
   void dispose() {
+    _tagController.dispose();
     _titleController.dispose();
     super.dispose();
+  }
+
+  void _addTag() {
+    final raw = _tagController.text.trim();
+    if (raw.isEmpty) return;
+
+    final parts = raw
+        .split(RegExp(r'[,\s]+'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    setState(() {
+      for (final t in parts) {
+        final tag = t.startsWith('#') ? t.substring(1) : t;
+        if (tag.isEmpty) continue;
+        if (!_tags.contains(tag)) _tags.add(tag);
+      }
+    });
+    _tagController.clear();
+  }
+
+  void _removeTag(String tag) {
+    setState(() => _tags.remove(tag));
   }
 
   void _submit() {
@@ -34,7 +62,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       id: _uuid.v4(),
       title: title,
       priority: _priority,
-      tags: [],
+      tags: List.unmodifiable(_tags),
     );
 
     context.read<TasksCubit>().createTask(task);
@@ -112,6 +140,54 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               _priorityChip(TaskPriority.high, "HIGH"),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _tagController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: "Add tags (e.g. work, urgent)",
+                  ),
+                  onSubmitted: (_) => _addTag(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(onPressed: _addTag, icon: const Icon(Icons.add)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (_tags.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _tags.map((tag) {
+                  return Chip(
+                    backgroundColor: TagColors.resolve(
+                      tag,
+                    ).withAlpha((0.22 * 255).toInt()),
+                    labelStyle: TextStyle(
+                      color: TagColors.resolve(tag),
+                      fontWeight: FontWeight.w700,
+                    ),
+                    label: Text("#$tag"),
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    deleteIconColor: TagColors.resolve(
+                      tag,
+                    ).withAlpha((0.7 * 255).toInt()),
+                    side: BorderSide(
+                      color: TagColors.resolve(
+                        tag,
+                      ).withAlpha((0.5 * 255).toInt()),
+                    ),
+                    onDeleted: () => _removeTag(tag),
+                  );
+                }).toList(),
+              ),
+            ),
         ],
       ),
     );

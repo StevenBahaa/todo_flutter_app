@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import '../../data/models/task_enums.dart';
@@ -93,8 +94,32 @@ class TaskCard extends StatelessWidget {
                   const SizedBox(height: 6),
 
                   Wrap(
-                    spacing: 6,
-                    children: task.tags.map((tag) => _tagChip(tag)).toList(),
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: task.tags.map((tag) {
+                      final c = TagColors.resolve(tag);
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: c.withAlpha((0.18 * 255).toInt()),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: c.withAlpha((0.45 * 255).toInt()),
+                          ),
+                        ),
+                        child: Text(
+                          "#$tag",
+                          style: TextStyle(
+                            color: c,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
