@@ -4,8 +4,7 @@ import 'package:todo_list/core/theme/app_theme.dart';
 import 'package:todo_list/data/local/hive_init.dart';
 import 'package:todo_list/data/repositories/tasks_repository.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
-import 'package:todo_list/features/tasks/view/tasks_list_screen.dart';
-import 'package:todo_list/features/tasks/view/tasks_test_screen.dart';
+import 'package:todo_list/features/tasks/view/comprehensive_task_list_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +25,7 @@ class MyApp extends StatelessWidget {
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           theme: AppTheme.darkTheme(),
-          home: TasksListScreen(),
+          home: ComprehensiveTaskListScreen(),
         ),
       ),
     );

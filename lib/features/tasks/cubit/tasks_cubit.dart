@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/data/repositories/tasks_repository.dart';
+import 'package:todo_list/features/tasks/cubit/tasks_filter.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_state.dart';
 
 class TasksCubit extends Cubit<TasksState> {
@@ -103,5 +103,9 @@ class TasksCubit extends Cubit<TasksState> {
         ),
       );
     }
+  }
+
+  void setFilter(TasksFilter f) {
+    emit(state.copyWith(filter: f));
   }
 }

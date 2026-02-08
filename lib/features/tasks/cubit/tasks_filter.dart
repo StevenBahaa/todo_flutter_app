@@ -1,0 +1,1 @@
+enum TasksFilter { all, overdue, today, highPriority }

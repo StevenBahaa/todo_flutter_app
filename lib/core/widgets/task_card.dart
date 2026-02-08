@@ -3,7 +3,6 @@ import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
-import '../../data/models/task_enums.dart';
 
 class TaskCard extends StatelessWidget {
   final TaskModel task;
@@ -61,65 +60,81 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasTags = task.tags.isNotEmpty;
+    final hasDue = task.dueDateTime != null;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // priority bar (بدون height ثابت)
           Container(
-            width: 6,
-            height: 75,
+            width: 5,
             decoration: BoxDecoration(
               color: priorityColor,
               borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(18),
+                left: Radius.circular(16),
               ),
             ),
           ),
+
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Top row (checkbox + title + badge)
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Checkbox(
-                        value: task.status == TaskStatus.done.index,
-                        onChanged: (_) => onToggleDone?.call(),
-                        activeColor: priorityColor,
+                      Transform.scale(
+                        scale: 0.92,
+                        child: Checkbox(
+                          value: isDone,
+                          onChanged: (_) => onToggleDone?.call(),
+                          activeColor: priorityColor,
+                        ),
                       ),
+                      const SizedBox(width: 2),
                       Expanded(
                         child: Text(
                           task.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            decoration: task.status == TaskStatus.done.index
+                            decoration: isDone
                                 ? TextDecoration.lineThrough
                                 : TextDecoration.none,
                             decorationColor: Colors.white54,
                           ),
                         ),
                       ),
-                      _priorityBadge(),
+                      const SizedBox(width: 8),
+                      _priorityBadgeCompact(),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  if (task.dueDateTime != null)
+
+                  // Due row (only if has due)
+                  if (hasDue) ...[
+                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.access_time, size: 16, color: dueColor),
+                        Icon(Icons.access_time, size: 14, color: dueColor),
                         const SizedBox(width: 6),
                         Text(
                           _formatDue(task.dueDateTime!),
                           style: TextStyle(
                             color: dueColor,
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -129,49 +144,88 @@ class TaskCard extends StatelessWidget {
                             "OVERDUE",
                             style: TextStyle(
                               color: AppColors.danger,
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
                             ),
                           ),
                         ],
                       ],
                     ),
+                  ],
 
-                  const SizedBox(height: 6),
+                  // Tags (only if has tags)
+                  if (hasTags) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: task.tags.take(3).map((tag) {
+                        final c = TagColors.resolve(tag);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: c.withAlpha((0.16 * 255).toInt()),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: c.withAlpha((0.40 * 255).toInt()),
+                            ),
+                          ),
+                          child: Text(
+                            "#$tag",
+                            style: TextStyle(
+                              color: c,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
 
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: task.tags.map((tag) {
-                      final c = TagColors.resolve(tag);
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                    // لو عندك tags أكتر من 3 اعرض "+N"
+                    if (task.tags.length > 3) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        "+${task.tags.length - 3} more",
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
-                        decoration: BoxDecoration(
-                          color: c.withAlpha((0.18 * 255).toInt()),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: c.withAlpha((0.45 * 255).toInt()),
-                          ),
-                        ),
-                        child: Text(
-                          "#$tag",
-                          style: TextStyle(
-                            color: c,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                      ),
+                    ],
+                  ],
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _priorityBadgeCompact() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: priorityColor.withAlpha((0.18 * 255).toInt()),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: priorityColor.withAlpha((0.45 * 255).toInt()),
+        ),
+      ),
+      child: Text(
+        priorityLable,
+        style: TextStyle(
+          color: priorityColor,
+          fontWeight: FontWeight.w800,
+          fontSize: 10.5,
+          letterSpacing: 0.4,
+        ),
       ),
     );
   }
