@@ -45,6 +45,7 @@ class TasksCubit extends Cubit<TasksState> {
 
   Future<void> updateTask(TaskModel task) async {
     final prev = state.tasks;
+    
     final updated = prev.map((t) => t.id == task.id ? task : t).toList();
     emit(state.copyWith(status: TasksStatus.success, tasks: updated));
 

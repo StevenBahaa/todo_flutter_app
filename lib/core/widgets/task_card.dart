@@ -3,6 +3,7 @@ import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
+import 'package:todo_list/features/tasks/view/task_details_screen.dart';
 
 class TaskCard extends StatelessWidget {
   final TaskModel task;
@@ -66,144 +67,168 @@ class TaskCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: const Color.fromARGB(255, 31, 87, 176),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // priority bar (بدون height ثابت)
-          Container(
-            width: 5,
-            decoration: BoxDecoration(
-              color: priorityColor,
-              borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(16),
-              ),
-            ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(16),
           ),
-
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top row (checkbox + title + badge)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Transform.scale(
-                        scale: 0.92,
-                        child: Checkbox(
-                          value: isDone,
-                          onChanged: (_) => onToggleDone?.call(),
-                          activeColor: priorityColor,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Expanded(
-                        child: Text(
-                          task.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            decoration: isDone
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none,
-                            decorationColor: Colors.white54,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _priorityBadgeCompact(),
-                    ],
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TaskDetailsScreen(task: task),
+                ),
+              );
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 5,
+                  decoration: BoxDecoration(
+                    color: priorityColor,
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(16),
+                    ),
                   ),
+                ),
 
-                  // Due row (only if has due)
-                  if (hasDue) ...[
-                    const SizedBox(height: 4),
-                    Row(
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.access_time, size: 14, color: dueColor),
-                        const SizedBox(width: 6),
-                        Text(
-                          _formatDue(task.dueDateTime!),
-                          style: TextStyle(
-                            color: dueColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (isOverdue) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            "OVERDUE",
-                            style: TextStyle(
-                              color: AppColors.danger,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.4,
+                        // Top row (checkbox + title + badge)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Transform.scale(
+                              scale: 0.92,
+                              child: Checkbox(
+                                value: isDone,
+                                onChanged: (_) => onToggleDone?.call(),
+                                activeColor: priorityColor,
+                              ),
                             ),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                task.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
+                                  decorationColor: Colors.white54,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _priorityBadgeCompact(),
+                          ],
+                        ),
+
+                        // Due row (only if has due)
+                        if (hasDue) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 14,
+                                color: dueColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _formatDue(task.dueDateTime!),
+                                style: TextStyle(
+                                  color: dueColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (isOverdue) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  "OVERDUE",
+                                  style: TextStyle(
+                                    color: AppColors.danger,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
+                        ],
+
+                        // Tags (only if has tags)
+                        if (hasTags) ...[
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: task.tags.take(3).map((tag) {
+                              final c = TagColors.resolve(tag);
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: c.withAlpha((0.16 * 255).toInt()),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: c.withAlpha((0.40 * 255).toInt()),
+                                  ),
+                                ),
+                                child: Text(
+                                  "#$tag",
+                                  style: TextStyle(
+                                    color: c,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+
+                          // لو عندك tags أكتر من 3 اعرض "+N"
+                          if (task.tags.length > 3) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              "+${task.tags.length - 3} more",
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ],
                       ],
                     ),
-                  ],
-
-                  // Tags (only if has tags)
-                  if (hasTags) ...[
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: task.tags.take(3).map((tag) {
-                        final c = TagColors.resolve(tag);
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: c.withAlpha((0.16 * 255).toInt()),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: c.withAlpha((0.40 * 255).toInt()),
-                            ),
-                          ),
-                          child: Text(
-                            "#$tag",
-                            style: TextStyle(
-                              color: c,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-
-                    // لو عندك tags أكتر من 3 اعرض "+N"
-                    if (task.tags.length > 3) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        "+${task.tags.length - 3} more",
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
