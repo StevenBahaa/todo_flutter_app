@@ -11,6 +11,7 @@ class TasksRepository {
 
   Future<void> add(TaskModel task) async {
     await _box.put(task.id, task);
+    
   }
 
   Future<void> update(TaskModel task) async {

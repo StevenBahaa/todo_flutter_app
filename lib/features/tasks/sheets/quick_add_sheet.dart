@@ -177,7 +177,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                   _dueDateTime == null ? "Due" : _formatDue(_dueDateTime!),
                 ),
               ),
-              const Spacer(),
+              const Spacer(flex: 1),
             ],
           ),
           const SizedBox(height: 12),
