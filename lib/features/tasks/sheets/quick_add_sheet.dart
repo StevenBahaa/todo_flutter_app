@@ -100,6 +100,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       priority: _priority,
       tags: List.unmodifiable(_tags),
       dueDateTime: _dueDateTime,
+      
     );
 
     context.read<TasksCubit>().createTask(task);
