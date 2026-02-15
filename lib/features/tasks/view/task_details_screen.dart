@@ -43,6 +43,22 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     super.dispose();
   }
 
+  bool get _hasChanges {
+    return _titleController.text.trim() != widget.task.title ||
+        _descController.text.trim() != (widget.task.description ?? "") ||
+        _priority.index != widget.task.priority ||
+        _dueDateTime != widget.task.dueDateTime ||
+        !_listEquals(_tags, widget.task.tags);
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   // -------------------------------------
   // Actions
   // -------------------------------------
@@ -67,27 +83,85 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          title: const Text("Delete task?"),
-          content: const Text("This action can't be undone."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text("Cancel"),
+        return Dialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Delete task?",
+                  style: TextStyle(
+                    color: AppColors.text,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                const Text(
+                  "This action can't be undone.",
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 18),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text(
+                          "Cancel",
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-              child: const Text("Delete"),
-            ),
-          ],
+          ),
         );
       },
     );
 
     if (ok == true) {
       context.read<TasksCubit>().deleteTask(widget.task.id);
-      Navigator.pop(context); // اقفل صفحة التفاصيل
+      Navigator.pop(context);
     }
   }
 
@@ -157,7 +231,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _save,
+        onPressed: _hasChanges ? _save : null,
+        backgroundColor: _hasChanges
+            ? AppColors.primary
+            : AppColors.primary.withAlpha((0.35 * 255).toInt()),
         child: const Icon(Icons.check),
       ),
       body: ListView(
@@ -187,6 +264,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       ),
       decoration: InputDecoration(labelText: "Title", hintText: "Task title"),
       textInputAction: TextInputAction.next,
+      onChanged: (_) => setState(() {}),
     );
   }
 
@@ -199,6 +277,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         labelText: "Description",
         hintText: "Add notes...",
       ),
+      onChanged: (_) => setState(() {}),
     );
   }
 
@@ -224,7 +303,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             return ChoiceChip(
               label: Text(p.name.toUpperCase()),
               selected: selected,
-              onSelected: (_) => setState(() => _priority = p),
+              onSelected: (_) {
+                setState(() {
+                  _priority = p;
+                });
+              },
               labelStyle: TextStyle(
                 color: selected ? c : c.withAlpha((0.90 * 255).toInt()),
                 fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
@@ -316,6 +399,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   hintText: "Add tags (e.g. work, urgent)",
                 ),
                 onSubmitted: (_) => _addTag(),
+                onChanged: (_) => setState(() {}),
               ),
             ),
             const SizedBox(width: 8),
