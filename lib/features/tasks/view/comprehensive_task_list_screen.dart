@@ -10,13 +10,41 @@ import '../cubit/tasks_filter.dart';
 import '../cubit/tasks_state.dart';
 import '../sheets/quick_add_sheet.dart';
 
-class ComprehensiveTaskListScreen extends StatelessWidget {
+class ComprehensiveTaskListScreen extends StatefulWidget {
   const ComprehensiveTaskListScreen({super.key});
 
+  @override
+  State<ComprehensiveTaskListScreen> createState() =>
+      _ComprehensiveTaskListScreenState();
+}
+
+class _ComprehensiveTaskListScreenState
+    extends State<ComprehensiveTaskListScreen> {
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  final Set<String> _exiting = {};
+
+  Future<void> _toggleWithExit(BuildContext context, TaskModel t) async {
+    final wasDone = t.status == TaskStatus.done.index;
+
+    // لو كانت Todo -> Done: اعمل خروج animation
+    if (!wasDone) {
+      setState(() => _exiting.add(t.id));
+
+      context.read<TasksCubit>().toggleDone(t);
+
+      await Future.delayed(const Duration(milliseconds: 320));
+      if (!mounted) return;
+
+      setState(() => _exiting.remove(t.id));
+    } else {
+      // Done -> Todo
+      context.read<TasksCubit>().toggleDone(t);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,9 +75,10 @@ class ComprehensiveTaskListScreen extends StatelessWidget {
           final today = _dateOnly(now);
 
           // 1) Active tasks only (مش done)
-          final active = state.tasks
-              .where((t) => t.status != TaskStatus.done.index)
-              .toList();
+          final active = state.tasks.where((t) {
+            final isDone = t.status == TaskStatus.done.index;
+            return !isDone || _exiting.contains(t.id);
+          }).toList();
 
           final doneTasks = state.tasks
               .where((t) => t.status == TaskStatus.done.index)
@@ -124,8 +153,16 @@ class ComprehensiveTaskListScreen extends StatelessWidget {
                     todayTasks.isEmpty &&
                     upcoming.isEmpty &&
                     noDate.isEmpty)
-                  _emptyState("No tasks yet. Tap + to add one."),
-
+                  _emptyState(
+                    "No tasks yet. Tap + to add one.",
+                    onAdd: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) => const QuickAddSheet(),
+                      );
+                    },
+                  ),
                 // لو القسم مش فاضي: اعرضه
                 ..._sectionIfNotEmpty(
                   context: context,
@@ -150,14 +187,142 @@ class ComprehensiveTaskListScreen extends StatelessWidget {
                 ),
                 if (state.filter == TasksFilter.all &&
                     doneTasks.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _doneSection(context, doneTasks),
+                  const SizedBox(height: 6),
+                  _doneSummaryRow(context, doneTasks),
                 ],
               ],
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _doneSummaryRow(BuildContext context, List<TaskModel> doneTasks) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, color: AppColors.success, size: 18),
+          const SizedBox(width: 10),
+          const Text(
+            "Completed",
+            style: TextStyle(
+              color: AppColors.text,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha((0.14 * 255).toInt()),
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(
+                color: AppColors.primary.withAlpha((0.35 * 255).toInt()),
+              ),
+            ),
+            child: Text(
+              "${doneTasks.length}",
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const Spacer(),
+          TextButton(
+            onPressed: () => _showDoneSheet(context, doneTasks),
+            child: const Text("View"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDoneSheet(BuildContext context, List<TaskModel> doneTasks) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.70,
+          minChildSize: 0.45,
+          maxChildSize: 0.92,
+          builder: (context, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(22),
+                ),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        const Text(
+                          "Completed",
+                          style: TextStyle(
+                            color: AppColors.text,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          "${doneTasks.length} tasks",
+                          style: const TextStyle(color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                      itemCount: doneTasks.length,
+                      itemBuilder: (context, i) {
+                        final t = doneTasks[i];
+                        return Opacity(
+                          opacity: 0.65,
+                          child: TaskCard(
+                            task: t,
+                            onToggleDone: () => _toggleWithExit(context, t),
+                            onDelete: () =>
+                                context.read<TasksCubit>().deleteTask(t.id),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -207,7 +372,7 @@ class ComprehensiveTaskListScreen extends StatelessWidget {
             child: TaskCard(
               task: t,
               // ✅ في done، خلي toggle يرجعها Todo
-              onToggleDone: () => context.read<TasksCubit>().toggleDone(t),
+              onToggleDone: () => _toggleWithExit(context, t),
               onDelete: () => context.read<TasksCubit>().deleteTask(t.id),
             ),
           );
@@ -237,8 +402,6 @@ class ComprehensiveTaskListScreen extends StatelessWidget {
     );
   }
 
-  // =========================
-  // Filters UI
   // =========================
   Widget _filtersRow(
     BuildContext context,
@@ -300,10 +463,6 @@ class ComprehensiveTaskListScreen extends StatelessWidget {
     );
   }
 
-  // =========================
-  // Sections helpers
-  // =========================
-
   /// تستخدم في وضع All: تخفي الـ section بالكامل لو فاضي
   List<Widget> _sectionIfNotEmpty({
     required BuildContext context,
@@ -348,30 +507,71 @@ class ComprehensiveTaskListScreen extends StatelessWidget {
 
   List<Widget> _tasksList(BuildContext context, List<TaskModel> tasks) {
     return tasks.map((t) {
-      return TaskCard(
-        task: t,
-        onToggleDone: () => context.read<TasksCubit>().toggleDone(t),
-        onDelete: () => context.read<TasksCubit>().deleteTask(t.id),
+      final exiting = _exiting.contains(t.id);
+
+      return AnimatedSize(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          opacity: exiting ? 0.0 : 1.0,
+          child: TaskCard(
+            task: t,
+            onToggleDone: () => _toggleWithExit(context, t),
+            onDelete: () => context.read<TasksCubit>().deleteTask(t.id),
+          ),
+        ),
       );
     }).toList();
   }
 
-  Widget _emptyState(String text) {
+  Widget _emptyState(String text, {VoidCallback? onAdd}) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
-      child: Text(text, style: const TextStyle(color: AppColors.textMuted)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha((0.18 * 255).toInt()),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withAlpha((0.35 * 255).toInt()),
+              ),
+            ),
+            child: const Icon(Icons.inbox_outlined, color: AppColors.primary),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            text,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (onAdd != null) ...[
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add),
+              label: const Text("Add task"),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
   // =========================
-  // Section UI pieces
-  // =========================
-
   Widget _sectionLabel(String title) {
     return Text(
       title,

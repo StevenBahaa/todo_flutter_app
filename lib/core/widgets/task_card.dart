@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:todo_list/core/sfx/sfx.dart';
 import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/view/task_details_screen.dart';
+import 'package:todo_list/features/tasks/widgets/animated_check.dart';
 
 class TaskCard extends StatelessWidget {
   final TaskModel task;
@@ -19,16 +21,13 @@ class TaskCard extends StatelessWidget {
 
   Color get priorityColor {
     final p = TaskPriority.values[task.priority];
-    switch (p) {
-      case TaskPriority.high:
-        return Colors.red;
-
-      case TaskPriority.medium:
-        return Colors.orange;
-
-      case TaskPriority.low:
-        return Colors.green;
-    }
+    Color c = switch (p) {
+      TaskPriority.high => AppColors.danger,
+      TaskPriority.medium => AppColors.warning,
+      TaskPriority.low => AppColors.success,
+    };
+    if (isDone) return c.withAlpha((0.35 * 255).toInt()); // muted
+    return c;
   }
 
   bool get isDone => task.status == TaskStatus.done.index;
@@ -55,7 +54,7 @@ class TaskCard extends StatelessWidget {
     return AppColors.textMuted;
   }
 
-  String get priorityLable {
+  String get priorityLabel {
     return TaskPriority.values[task.priority].name.toUpperCase();
   }
 
@@ -64,11 +63,16 @@ class TaskCard extends StatelessWidget {
     final hasTags = task.tags.isNotEmpty;
     final hasDue = task.dueDateTime != null;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 31, 87, 176),
+        color: isDone ? AppColors.surface : const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDone ? AppColors.border : Colors.transparent,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -107,32 +111,41 @@ class TaskCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Top row (checkbox + title + badge)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Transform.scale(
                               scale: 0.92,
-                              child: Checkbox(
-                                value: isDone,
-                                onChanged: (_) => onToggleDone?.call(),
-                                activeColor: priorityColor,
+                              child: AnimatedCheck(
+                                checked: isDone,
+                                color: priorityColor,
+                                onTap: () async {
+                                  final wasDone = isDone;
+                                  onToggleDone?.call();
+                                  if (!wasDone) await Sfx.check();
+                                },
                               ),
                             ),
                             const SizedBox(width: 2),
                             Expanded(
-                              child: Text(
-                                task.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOut,
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: isDone
+                                      ? AppColors.textMuted
+                                      : AppColors.text,
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                   decoration: isDone
                                       ? TextDecoration.lineThrough
                                       : TextDecoration.none,
-                                  decorationColor: Colors.white54,
+                                  decorationColor: AppColors.textMuted,
+                                ),
+                                child: Text(
+                                  task.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ),
@@ -208,7 +221,6 @@ class TaskCard extends StatelessWidget {
                             }).toList(),
                           ),
 
-                          // لو عندك tags أكتر من 3 اعرض "+N"
                           if (task.tags.length > 3) ...[
                             const SizedBox(height: 6),
                             Text(
@@ -244,7 +256,7 @@ class TaskCard extends StatelessWidget {
         ),
       ),
       child: Text(
-        priorityLable,
+        priorityLabel,
         style: TextStyle(
           color: priorityColor,
           fontWeight: FontWeight.w800,
@@ -269,7 +281,7 @@ class TaskCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        priorityLable,
+        priorityLabel,
         style: TextStyle(
           color: priorityColor,
           fontWeight: FontWeight.bold,
