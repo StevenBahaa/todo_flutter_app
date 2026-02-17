@@ -104,13 +104,28 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             // next days only + not done
             // ----------------------------
             final upcomingAll =
-                state.tasks.where((t) {
-                    if (t.dueDateTime == null) return false;
-                    return _dateOnly(t.dueDateTime!).isAfter(today) &&
-                        t.status != TaskStatus.done.index;
-                  }).toList()
-                  ..sort((a, b) => a.dueDateTime!.compareTo(b.dueDateTime!));
+                state.tasks
+                    .where((t) => t.status != TaskStatus.done.index)
+                    .where((t) {
+                      // include tasks with no date
+                      if (t.dueDateTime == null) return true;
 
+                      // keep only future-dated tasks (after today)
+                      return _dateOnly(t.dueDateTime!).isAfter(today);
+                    })
+                    .toList()
+                  ..sort((a, b) {
+                    final ad = a.dueDateTime;
+                    final bd = b.dueDateTime;
+
+                    // Dated tasks first
+                    if (ad == null && bd == null) return 0;
+                    if (ad == null) return 1;
+                    if (bd == null) return -1;
+
+                    // Both dated: earlier first
+                    return ad.compareTo(bd);
+                  });
             final upcomingTop = upcomingAll.take(3).toList();
 
             return ListView(
@@ -193,10 +208,10 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
                   Text(
                     leftToday == 0
-                        ? "All tasks done 🎉"
+                        ? "All tasks done for today 🎉"
                         : "$leftToday task(s) left",
                     style: const TextStyle(
                       color: AppColors.textMuted,

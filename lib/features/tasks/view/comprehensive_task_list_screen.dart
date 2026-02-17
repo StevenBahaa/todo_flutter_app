@@ -123,7 +123,6 @@ class _ComprehensiveTaskListScreenState
               _filtersRow(context, state.filter, overdue.length),
               const SizedBox(height: 12),
 
-              // ---- FILTERED VIEWS (يعرض View واحد فقط) ----
               if (state.filter == TasksFilter.overdue) ...[
                 _filterHeader(context, "Overdue", overdue.length),
                 const SizedBox(height: 10),
@@ -146,9 +145,6 @@ class _ComprehensiveTaskListScreenState
                 else
                   ..._tasksList(context, highPriority),
               ] else ...[
-                // ---- ALL VIEW (يعرض أقسام) ----
-
-                // لو كله فاضي: Empty state واحدة
                 if (overdue.isEmpty &&
                     todayTasks.isEmpty &&
                     upcoming.isEmpty &&
@@ -163,7 +159,6 @@ class _ComprehensiveTaskListScreenState
                       );
                     },
                   ),
-                // لو القسم مش فاضي: اعرضه
                 ..._sectionIfNotEmpty(
                   context: context,
                   title: "OVERDUE",
@@ -199,7 +194,20 @@ class _ComprehensiveTaskListScreenState
   }
 
   Widget _doneSummaryRow(BuildContext context, List<TaskModel> doneTasks) {
+    final hasDone = doneTasks.isNotEmpty;
+
+    final countChipBg = hasDone
+        ? AppColors.primary.withAlpha((0.14 * 255).toInt())
+        : AppColors.textMuted.withAlpha((0.10 * 255).toInt());
+
+    final countChipBorder = hasDone
+        ? AppColors.primary.withAlpha((0.35 * 255).toInt())
+        : AppColors.border;
+
+    final countChipText = hasDone ? AppColors.primary : AppColors.textMuted;
+
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -208,8 +216,13 @@ class _ComprehensiveTaskListScreenState
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, color: AppColors.success, size: 18),
+          Icon(
+            Icons.check_circle,
+            color: hasDone ? AppColors.success : AppColors.textMuted,
+            size: 18,
+          ),
           const SizedBox(width: 10),
+
           const Text(
             "Completed",
             style: TextStyle(
@@ -217,29 +230,56 @@ class _ComprehensiveTaskListScreenState
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(width: 8),
+
+          const SizedBox(width: 10),
+
+          // Count chip (animated)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha((0.14 * 255).toInt()),
+              color: countChipBg,
               borderRadius: BorderRadius.circular(99),
-              border: Border.all(
-                color: AppColors.primary.withAlpha((0.35 * 255).toInt()),
-              ),
+              border: Border.all(color: countChipBorder),
             ),
-            child: Text(
-              "${doneTasks.length}",
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
+              child: Text(
+                "${doneTasks.length}",
+                key: ValueKey(doneTasks.length),
+                style: TextStyle(
+                  color: countChipText,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                ),
               ),
             ),
           ),
+
           const Spacer(),
-          TextButton(
-            onPressed: () => _showDoneSheet(context, doneTasks),
-            child: const Text("View"),
+
+          // View button (disabled when empty)
+          TextButton.icon(
+            onPressed: hasDone
+                ? () => _showDoneSheet(context, doneTasks)
+                : null,
+            icon: const Icon(Icons.visibility, size: 16),
+            label: const Text("View"),
+            style: TextButton.styleFrom(
+              foregroundColor: hasDone
+                  ? AppColors.primary
+                  : AppColors.textMuted,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: hasDone
+                      ? AppColors.primary.withAlpha((0.35 * 255).toInt())
+                      : AppColors.border,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -247,25 +287,21 @@ class _ComprehensiveTaskListScreenState
   }
 
   void _showDoneSheet(BuildContext context, List<TaskModel> doneTasks) {
+    final sheetTasks = List<TaskModel>.of(doneTasks);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
       builder: (_) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.70,
-          minChildSize: 0.45,
-          maxChildSize: 0.92,
-          builder: (context, controller) {
-            return Container(
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(22),
-                ),
-                border: Border.all(color: AppColors.border),
-              ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return SafeArea(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 10),
                   Container(
@@ -277,107 +313,71 @@ class _ComprehensiveTaskListScreenState
                     ),
                   ),
                   const SizedBox(height: 14),
+
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
                         const Text(
-                          "Completed",
+                          "Completed Today",
                           style: TextStyle(
                             color: AppColors.text,
-                            fontSize: 18,
                             fontWeight: FontWeight.w900,
+                            fontSize: 16,
                           ),
                         ),
                         const Spacer(),
                         Text(
-                          "${doneTasks.length} tasks",
+                          "${sheetTasks.length}",
                           style: const TextStyle(color: AppColors.textMuted),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Expanded(
+                  const SizedBox(height: 12),
+
+                  Flexible(
                     child: ListView.builder(
-                      controller: controller,
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                      itemCount: doneTasks.length,
+                      shrinkWrap: true,
+                      itemCount: sheetTasks.length,
                       itemBuilder: (context, i) {
-                        final t = doneTasks[i];
-                        return Opacity(
-                          opacity: 0.65,
-                          child: TaskCard(
-                            task: t,
-                            onToggleDone: () => _toggleWithExit(context, t),
-                            onDelete: () =>
-                                context.read<TasksCubit>().deleteTask(t.id),
-                          ),
+                        final task = sheetTasks[i];
+
+                        return TaskCard(
+                          task: task,
+
+                          // ✅ Toggle to UNDONE inside sheet:
+                          // remove immediately from sheet + update cubit
+                          onToggleDone: () {
+                            setState(() {
+                              sheetTasks.removeWhere((t) => t.id == task.id);
+                            });
+
+                            // This will make the task appear again in main screen lists
+                            context.read<TasksCubit>().toggleDone(task);
+                          },
+
+                          // ✅ Delete inside sheet:
+                          // remove immediately from sheet + delete in cubit
+                          onDelete: () {
+                            setState(() {
+                              sheetTasks.removeWhere((t) => t.id == task.id);
+                            });
+
+                            context.read<TasksCubit>().deleteTask(task.id);
+                          },
                         );
                       },
                     ),
                   ),
+
+                  const SizedBox(height: 10),
                 ],
               ),
             );
           },
         );
       },
-    );
-  }
-
-  Widget _doneSection(BuildContext context, List<TaskModel> doneTasks) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 4),
-        childrenPadding: const EdgeInsets.only(bottom: 8),
-        collapsedIconColor: AppColors.textMuted,
-        iconColor: AppColors.textMuted,
-        title: Row(
-          children: [
-            const Text(
-              "COMPLETED",
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-                fontSize: 12,
-              ),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha((0.14 * 255).toInt()),
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(
-                  color: AppColors.primary.withAlpha((0.35 * 255).toInt()),
-                ),
-              ),
-              child: Text(
-                "${doneTasks.length}",
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
-        children: doneTasks.map((t) {
-          return Opacity(
-            opacity: 0.65,
-            child: TaskCard(
-              task: t,
-              // ✅ في done، خلي toggle يرجعها Todo
-              onToggleDone: () => _toggleWithExit(context, t),
-              onDelete: () => context.read<TasksCubit>().deleteTask(t.id),
-            ),
-          );
-        }).toList(),
-      ),
     );
   }
 
@@ -391,12 +391,6 @@ class _ComprehensiveTaskListScreenState
             fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
-        ),
-        const Spacer(),
-        TextButton(
-          onPressed: () =>
-              context.read<TasksCubit>().setFilter(TasksFilter.all),
-          child: const Text("Clear"),
         ),
       ],
     );
@@ -423,24 +417,12 @@ class _ComprehensiveTaskListScreenState
               if (badgeCount != null && badgeCount > 0) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.danger.withAlpha((0.18 * 255).toInt()),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(
-                      color: AppColors.danger.withAlpha((0.55 * 255).toInt()),
-                    ),
-                  ),
-                  child: Text(
-                    "$badgeCount",
-                    style: const TextStyle(
-                      color: AppColors.danger,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
+                    color: AppColors.danger,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.surface, width: 1.5),
                   ),
                 ),
               ],
