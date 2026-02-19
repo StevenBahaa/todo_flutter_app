@@ -6,11 +6,14 @@ class HiveInit {
   static Future<void> init() async {
     await Hive.initFlutter();
 
-    // Adapters will be registered here later (Task, Category, Prefs)
+    // Register adapters
     if (!Hive.isAdapterRegistered(TaskModelAdapter().typeId)) {
       Hive.registerAdapter(TaskModelAdapter());
     }
 
+
+
+    // Open boxes
     await Hive.openBox<TaskModel>(HiveBoxs.tasks);
     await Hive.openBox(HiveBoxs.categories);
     await Hive.openBox(HiveBoxs.prefs);
