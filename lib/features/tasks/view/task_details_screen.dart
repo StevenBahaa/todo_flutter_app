@@ -2,11 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+
 import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
+
+// ✅ localization import (your project path)
+import 'package:todo_list/l10n/app_localizations.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   TaskModel task;
@@ -80,6 +85,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   Future<void> _confirmDelete() async {
+    final t = AppLocalizations.of(context)!;
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) {
@@ -94,45 +101,39 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  "Delete task?",
-                  style: TextStyle(
+                Text(
+                  t.deleteTaskTitle,
+                  style: const TextStyle(
                     color: AppColors.text,
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
-                const Text(
-                  "This action can't be undone.",
-                  style: TextStyle(
+                Text(
+                  t.deleteTaskCannotUndo,
+                  style: const TextStyle(
                     color: AppColors.textMuted,
                     fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
                 ),
-
                 const SizedBox(height: 18),
-
                 Row(
                   children: [
                     Expanded(
                       child: TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text(
-                          "Cancel",
-                          style: TextStyle(
+                        child: Text(
+                          t.cancel,
+                          style: const TextStyle(
                             color: AppColors.textMuted,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 10),
-
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
@@ -144,9 +145,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           elevation: 0,
                         ),
                         onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text(
-                          "Delete",
-                          style: TextStyle(fontWeight: FontWeight.w800),
+                        child: Text(
+                          t.delete,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),
                     ),
@@ -167,10 +168,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Future<void> _pickDueDateTime() async {
     final now = DateTime.now();
+
     final date = await showDatePicker(
       context: context,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 5),
+      initialDate: _dueDateTime ?? now,
     );
     if (date == null) return;
 
@@ -184,9 +187,19 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     if (time == null) {
       setState(() {
         _dueDateTime = DateTime(date.year, date.month, date.day);
-        return;
       });
+      return;
     }
+
+    setState(() {
+      _dueDateTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
   }
 
   void _clearDue() => setState(() => _dueDateTime = null);
@@ -200,6 +213,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
+
     setState(() {
       for (final p in parts) {
         final tag = p.startsWith('#') ? p.substring(1) : p;
@@ -213,20 +227,35 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   void _removeTag(String tag) => setState(() => _tags.remove(tag));
 
+  String _priorityLabel(BuildContext context, TaskPriority p) {
+    final t = AppLocalizations.of(context)!;
+    switch (p) {
+      case TaskPriority.low:
+        return t.priorityLow;
+      case TaskPriority.medium:
+        return t.priorityMedium;
+      case TaskPriority.high:
+        return t.priorityHigh;
+    }
+  }
+
   // =========================
   // UI
   // =========================
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
-        title: const Text('Task Details'),
+        title: Text(t.taskDetailsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.redAccent),
             onPressed: _confirmDelete,
+            tooltip: t.delete,
           ),
         ],
       ),
@@ -240,21 +269,23 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
         children: [
-          _titleField(),
+          _titleField(context),
           const SizedBox(height: 16),
-          _descriptionField(),
+          _descriptionField(context),
           const SizedBox(height: 18),
-          _prioritySection(),
+          _prioritySection(context),
           const SizedBox(height: 18),
-          _dueSection(),
+          _dueSection(context),
           const SizedBox(height: 18),
-          _tagsSection(),
+          _tagsSection(context),
         ],
       ),
     );
   }
 
-  Widget _titleField() {
+  Widget _titleField(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return TextField(
       controller: _titleController,
       style: const TextStyle(
@@ -262,32 +293,39 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         fontSize: 18,
         fontWeight: FontWeight.w800,
       ),
-      decoration: InputDecoration(labelText: "Title", hintText: "Task title"),
+      decoration: InputDecoration(
+        labelText: t.titleLabel,
+        hintText: t.taskTitleHint,
+      ),
       textInputAction: TextInputAction.next,
       onChanged: (_) => setState(() {}),
     );
   }
 
-  Widget _descriptionField() {
+  Widget _descriptionField(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return TextField(
       controller: _descController,
       maxLines: 4,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
-        labelText: "Description",
-        hintText: "Add notes...",
+        labelText: t.descriptionLabel,
+        hintText: t.descriptionHint,
       ),
       onChanged: (_) => setState(() {}),
     );
   }
 
-  Widget _prioritySection() {
+  Widget _prioritySection(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Priority",
-          style: TextStyle(
+        Text(
+          t.priorityLabel,
+          style: const TextStyle(
             color: AppColors.textMuted,
             fontWeight: FontWeight.w800,
           ),
@@ -301,13 +339,9 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             final c = _priorityColor(p);
 
             return ChoiceChip(
-              label: Text(p.name.toUpperCase()),
+              label: Text(_priorityLabel(context, p)),
               selected: selected,
-              onSelected: (_) {
-                setState(() {
-                  _priority = p;
-                });
-              },
+              onSelected: (_) => setState(() => _priority = p),
               labelStyle: TextStyle(
                 color: selected ? c : c.withAlpha((0.90 * 255).toInt()),
                 fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
@@ -327,13 +361,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  Widget _dueSection() {
+  Widget _dueSection(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Due",
-          style: TextStyle(
+        Text(
+          t.due,
+          style: const TextStyle(
             color: AppColors.textMuted,
             fontWeight: FontWeight.w800,
           ),
@@ -357,20 +393,17 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               Expanded(
                 child: Text(
                   _dueDateTime == null
-                      ? "No due date"
-                      : _formatDue(_dueDateTime!),
+                      ? t.noDueDate
+                      : _formatDue(context, _dueDateTime!),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: _pickDueDateTime,
-                child: const Text("Pick"),
-              ),
+              TextButton(onPressed: _pickDueDateTime, child: Text(t.pick)),
               if (_dueDateTime != null)
-                TextButton(onPressed: _clearDue, child: const Text("Clear")),
+                TextButton(onPressed: _clearDue, child: Text(t.clear)),
             ],
           ),
         ),
@@ -378,13 +411,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
-  Widget _tagsSection() {
+  Widget _tagsSection(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Tags",
-          style: TextStyle(
+        Text(
+          t.tagsLabel,
+          style: const TextStyle(
             color: AppColors.textMuted,
             fontWeight: FontWeight.w800,
           ),
@@ -395,9 +430,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             Expanded(
               child: TextField(
                 controller: _tagController,
-                decoration: const InputDecoration(
-                  hintText: "Add tags (e.g. work, urgent)",
-                ),
+                decoration: InputDecoration(hintText: t.addTagsHint),
                 onSubmitted: (_) => _addTag(),
                 onChanged: (_) => setState(() {}),
               ),
@@ -408,7 +441,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
         const SizedBox(height: 10),
         if (_tags.isEmpty)
-          const Text("No tags", style: TextStyle(color: AppColors.textMuted))
+          Text(t.noTags, style: const TextStyle(color: AppColors.textMuted))
         else
           Wrap(
             spacing: 8,
@@ -440,9 +473,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
-  String _formatDue(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return "${dt.day}/${dt.month}/${dt.year}  $h:$m";
+  String _formatDue(BuildContext context, DateTime dt) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final date = DateFormat('d/M/y', locale).format(dt);
+    final time = DateFormat('HH:mm', locale).format(dt);
+    return '$date  $time';
   }
 }

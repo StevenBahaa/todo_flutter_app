@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+
 import 'package:todo_list/core/sfx/sfx.dart';
 import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
@@ -7,6 +11,9 @@ import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/view/task_details_screen.dart';
 import 'package:todo_list/features/tasks/widgets/animated_check.dart';
+
+// ✅ Your generated localization import (as you confirmed)
+import 'package:todo_list/l10n/app_localizations.dart';
 
 class TaskCard extends StatelessWidget {
   final TaskModel task;
@@ -20,6 +27,8 @@ class TaskCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  bool get isDone => task.status == TaskStatus.done.index;
+
   Color get priorityColor {
     final p = TaskPriority.values[task.priority];
     Color c = switch (p) {
@@ -30,8 +39,6 @@ class TaskCard extends StatelessWidget {
     if (isDone) return c.withAlpha((0.35 * 255).toInt());
     return c;
   }
-
-  bool get isDone => task.status == TaskStatus.done.index;
 
   bool get isOverdue {
     final due = task.dueDateTime;
@@ -54,12 +61,26 @@ class TaskCard extends StatelessWidget {
     return AppColors.textMuted;
   }
 
-  String get priorityLabel {
-    return TaskPriority.values[task.priority].name.toUpperCase();
+  String _priorityLabel(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final p = TaskPriority.values[task.priority];
+
+    switch (p) {
+      case TaskPriority.low:
+        return t.priorityLow;
+      case TaskPriority.medium:
+        return t.priorityMedium;
+      case TaskPriority.high:
+        return t.priorityHigh;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode;
+    debugPrint('TaskCard locale: $locale');
+    final t = AppLocalizations.of(context)!;
+
     final hasTags = task.tags.isNotEmpty;
     final hasDue = task.dueDateTime != null;
 
@@ -126,11 +147,9 @@ class TaskCard extends StatelessWidget {
                                   checked: isDone,
                                   color: priorityColor,
                                   onTap: () async {
-                                    HapticFeedback.selectionClick(); // ✅ ADD HERE
-
+                                    HapticFeedback.selectionClick();
                                     final wasDone = isDone;
                                     onToggleDone?.call();
-
                                     if (!wasDone) await Sfx.check();
                                   },
                                 ),
@@ -159,11 +178,13 @@ class TaskCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              _priorityBadgeCompact(),
+
+                              // ✅ pass context here
+                              _priorityBadgeCompact(context),
                             ],
                           ),
 
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
 
                           if (hasDue) ...[
                             const SizedBox(height: 8),
@@ -176,7 +197,7 @@ class TaskCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _formatDue(task.dueDateTime!),
+                                  _formatDue(context, task.dueDateTime!),
                                   style: TextStyle(
                                     color: dueColor,
                                     fontSize: 12,
@@ -186,8 +207,8 @@ class TaskCard extends StatelessWidget {
                                 if (isOverdue) ...[
                                   const SizedBox(width: 8),
                                   Text(
-                                    "OVERDUE",
-                                    style: TextStyle(
+                                    t.overdue,
+                                    style: const TextStyle(
                                       color: AppColors.danger,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
@@ -232,7 +253,7 @@ class TaskCard extends StatelessWidget {
                             if (task.tags.length > 3) ...[
                               const SizedBox(height: 6),
                               Text(
-                                "+${task.tags.length - 3} more",
+                                t.moreCount(task.tags.length - 3),
                                 style: const TextStyle(
                                   color: AppColors.textMuted,
                                   fontSize: 11,
@@ -268,22 +289,24 @@ class TaskCard extends StatelessWidget {
   }
 
   Future<bool> _confirmDelete(BuildContext context) async {
+    final t = AppLocalizations.of(context)!;
+
     return (await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
             backgroundColor: AppColors.surface,
-            title: const Text("Delete task?"),
-            content: Text("“${task.title}” will be removed."),
+            title: Text(t.deleteTaskTitle),
+            content: Text(t.deleteTaskBody(task.title)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text("Cancel"),
+                child: Text(t.cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  "Delete",
-                  style: TextStyle(
+                child: Text(
+                  t.delete,
+                  style: const TextStyle(
                     color: AppColors.danger,
                     fontWeight: FontWeight.w800,
                   ),
@@ -295,7 +318,7 @@ class TaskCard extends StatelessWidget {
         false;
   }
 
-  Widget _priorityBadgeCompact() {
+  Widget _priorityBadgeCompact(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -306,7 +329,7 @@ class TaskCard extends StatelessWidget {
         ),
       ),
       child: Text(
-        priorityLabel,
+        _priorityLabel(context),
         style: TextStyle(
           color: priorityColor,
           fontWeight: FontWeight.w800,
@@ -317,9 +340,10 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  String _formatDue(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return "${dt.day}/${dt.month} $h:$m";
+  String _formatDue(BuildContext context, DateTime dt) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final date = DateFormat('d/M', locale).format(dt);
+    final time = DateFormat('HH:mm', locale).format(dt);
+    return '$date  $time';
   }
 }

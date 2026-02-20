@@ -5,9 +5,16 @@ import 'package:todo_list/core/theme/app_theme.dart';
 import 'package:todo_list/data/local/hive_init.dart';
 import 'package:todo_list/data/local/user_profile_prefs.dart';
 import 'package:todo_list/data/repositories/tasks_repository.dart';
+import 'package:todo_list/features/onboarding/view/onboarding_screen.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
 import 'package:todo_list/features/tasks/view/today_dashboard_screen.dart';
-import 'package:todo_list/features/onboarding/view/onboarding_screen.dart';
+
+// ✅ Settings
+import 'package:todo_list/features/settings/cubit/settings_cubit.dart';
+import 'package:todo_list/features/settings/cubit/settings_state.dart';
+
+// ✅ Generated localizations (gen-l10n)
+import 'package:todo_list/l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,15 +32,38 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider(
-      create: (_) => TasksRepository(),
-      child: BlocProvider(
-        create: (context) =>
-            TasksCubit(context.read<TasksRepository>())..loadTasks(),
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.darkTheme(),
-          home: seenOnboarding ? const TodayDashboardScreen() : const OnboardingScreen(),
+    return MultiRepositoryProvider(
+      providers: [RepositoryProvider(create: (_) => TasksRepository())],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) =>
+                TasksCubit(context.read<TasksRepository>())..loadTasks(),
+          ),
+          BlocProvider(create: (_) => SettingsCubit()..load()),
+        ],
+        child: BlocBuilder<SettingsCubit, SettingsState>(
+          builder: (context, s) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+
+              // THEME
+              theme: AppTheme.lightTheme(),
+              darkTheme: AppTheme.darkTheme(),
+              themeMode: s.themeMode,
+
+              // LOCALE
+              locale: Locale(s.langCode),
+
+              // ✅ This makes AppLocalizations.of(context) NOT NULL
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+
+              home: seenOnboarding
+                  ? const TodayDashboardScreen()
+                  : const OnboardingScreen(),
+            );
+          },
         ),
       ),
     );

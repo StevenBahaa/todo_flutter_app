@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/task_card.dart';
-import '../../../data/models/task_enums.dart';
-import '../../../data/models/task_model.dart';
-import '../cubit/tasks_cubit.dart';
-import '../cubit/tasks_filter.dart';
-import '../cubit/tasks_state.dart';
-import '../sheets/quick_add_sheet.dart';
+import 'package:todo_list/core/theme/app_colors.dart';
+import 'package:todo_list/core/widgets/task_card.dart';
+import 'package:todo_list/data/models/task_enums.dart';
+import 'package:todo_list/data/models/task_model.dart';
+import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
+import 'package:todo_list/features/tasks/cubit/tasks_filter.dart';
+import 'package:todo_list/features/tasks/cubit/tasks_state.dart';
+import 'package:todo_list/features/tasks/sheets/quick_add_sheet.dart';
+
+// ✅ localization import (your project path)
+import 'package:todo_list/l10n/app_localizations.dart';
 
 class ComprehensiveTaskListScreen extends StatefulWidget {
   const ComprehensiveTaskListScreen({super.key});
@@ -30,7 +33,6 @@ class _ComprehensiveTaskListScreenState
   Future<void> _toggleWithExit(BuildContext context, TaskModel t) async {
     final wasDone = t.status == TaskStatus.done.index;
 
-    // لو كانت Todo -> Done: اعمل خروج animation
     if (!wasDone) {
       setState(() => _exiting.add(t.id));
 
@@ -41,17 +43,18 @@ class _ComprehensiveTaskListScreenState
 
       setState(() => _exiting.remove(t.id));
     } else {
-      // Done -> Todo
       context.read<TasksCubit>().toggleDone(t);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
-        title: const Text("All Tasks"),
+        title: Text(t.allTasksTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),
@@ -74,49 +77,47 @@ class _ComprehensiveTaskListScreenState
           final now = DateTime.now();
           final today = _dateOnly(now);
 
-          // 1) Active tasks only (مش done)
-          final active = state.tasks.where((t) {
-            final isDone = t.status == TaskStatus.done.index;
-            return !isDone || _exiting.contains(t.id);
+          // Active tasks only (not done) + include exiting items
+          final active = state.tasks.where((x) {
+            final isDone = x.status == TaskStatus.done.index;
+            return !isDone || _exiting.contains(x.id);
           }).toList();
 
           final doneTasks = state.tasks
-              .where((t) => t.status == TaskStatus.done.index)
+              .where((x) => x.status == TaskStatus.done.index)
               .toList();
 
-          // 2) Build lists (كل القوايم اللي هنحتاجها)
           final overdue = active
               .where(
-                (t) => t.dueDateTime != null && t.dueDateTime!.isBefore(now),
+                (x) => x.dueDateTime != null && x.dueDateTime!.isBefore(now),
               )
               .toList();
 
           final todayTasks = active
               .where(
-                (t) =>
-                    t.dueDateTime != null &&
-                    _isSameDay(_dateOnly(t.dueDateTime!), today) &&
-                    !t.dueDateTime!.isBefore(now),
+                (x) =>
+                    x.dueDateTime != null &&
+                    _isSameDay(_dateOnly(x.dueDateTime!), today) &&
+                    !x.dueDateTime!.isBefore(now),
               )
               .toList();
 
           final upcoming = active
               .where(
-                (t) =>
-                    t.dueDateTime != null &&
-                    _dateOnly(t.dueDateTime!).isAfter(today),
+                (x) =>
+                    x.dueDateTime != null &&
+                    _dateOnly(x.dueDateTime!).isAfter(today),
               )
               .toList();
 
-          final noDate = active.where((t) => t.dueDateTime == null).toList();
+          final noDate = active.where((x) => x.dueDateTime == null).toList();
 
           final highPriority = active
               .where(
-                (t) => TaskPriority.values[t.priority] == TaskPriority.high,
+                (x) => TaskPriority.values[x.priority] == TaskPriority.high,
               )
               .toList();
 
-          // 3) UI
           return ListView(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 110),
             children: [
@@ -124,24 +125,28 @@ class _ComprehensiveTaskListScreenState
               const SizedBox(height: 12),
 
               if (state.filter == TasksFilter.overdue) ...[
-                _filterHeader(context, "Overdue", overdue.length),
+                _filterHeader(context, t.overdueTitle, overdue.length),
                 const SizedBox(height: 10),
                 if (overdue.isEmpty)
-                  _emptyState("No overdue tasks 🎉")
+                  _emptyState(t.noOverdueTasks)
                 else
                   ..._tasksList(context, overdue),
               ] else if (state.filter == TasksFilter.today) ...[
-                _filterHeader(context, "Today", todayTasks.length),
+                _filterHeader(context, t.todayTitle, todayTasks.length),
                 const SizedBox(height: 10),
                 if (todayTasks.isEmpty)
-                  _emptyState("No tasks for today")
+                  _emptyState(t.noTasksForToday)
                 else
                   ..._tasksList(context, todayTasks),
               ] else if (state.filter == TasksFilter.highPriority) ...[
-                _filterHeader(context, "High Priority", highPriority.length),
+                _filterHeader(
+                  context,
+                  t.highPriorityTitle,
+                  highPriority.length,
+                ),
                 const SizedBox(height: 10),
                 if (highPriority.isEmpty)
-                  _emptyState("No high priority tasks")
+                  _emptyState(t.noHighPriorityTasks)
                 else
                   ..._tasksList(context, highPriority),
               ] else ...[
@@ -150,7 +155,7 @@ class _ComprehensiveTaskListScreenState
                     upcoming.isEmpty &&
                     noDate.isEmpty)
                   _emptyState(
-                    "No tasks yet. Tap + to add one.",
+                    t.noTasksYet,
                     onAdd: () {
                       showModalBottomSheet(
                         context: context,
@@ -159,27 +164,29 @@ class _ComprehensiveTaskListScreenState
                       );
                     },
                   ),
+
                 ..._sectionIfNotEmpty(
                   context: context,
-                  title: "OVERDUE",
+                  title: t.sectionOverdueUpper,
                   tasks: overdue,
                   headerWithCount: true,
                 ),
                 ..._sectionIfNotEmpty(
                   context: context,
-                  title: "TODAY",
+                  title: t.sectionTodayUpper,
                   tasks: todayTasks,
                 ),
                 ..._sectionIfNotEmpty(
                   context: context,
-                  title: "UPCOMING",
+                  title: t.sectionUpcomingUpper,
                   tasks: upcoming,
                 ),
                 ..._sectionIfNotEmpty(
                   context: context,
-                  title: "NO DATE",
+                  title: t.sectionNoDateUpper,
                   tasks: noDate,
                 ),
+
                 if (state.filter == TasksFilter.all &&
                     doneTasks.isNotEmpty) ...[
                   const SizedBox(height: 6),
@@ -194,6 +201,7 @@ class _ComprehensiveTaskListScreenState
   }
 
   Widget _doneSummaryRow(BuildContext context, List<TaskModel> doneTasks) {
+    final t = AppLocalizations.of(context)!;
     final hasDone = doneTasks.isNotEmpty;
 
     final countChipBg = hasDone
@@ -223,9 +231,9 @@ class _ComprehensiveTaskListScreenState
           ),
           const SizedBox(width: 10),
 
-          const Text(
-            "Completed",
-            style: TextStyle(
+          Text(
+            t.completedLabel,
+            style: const TextStyle(
               color: AppColors.text,
               fontWeight: FontWeight.w800,
             ),
@@ -233,7 +241,6 @@ class _ComprehensiveTaskListScreenState
 
           const SizedBox(width: 10),
 
-          // Count chip (animated)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
@@ -259,13 +266,12 @@ class _ComprehensiveTaskListScreenState
 
           const Spacer(),
 
-          // View button (disabled when empty)
           TextButton.icon(
             onPressed: hasDone
                 ? () => _showDoneSheet(context, doneTasks)
                 : null,
             icon: const Icon(Icons.visibility, size: 16),
-            label: const Text("View"),
+            label: Text(t.view),
             style: TextButton.styleFrom(
               foregroundColor: hasDone
                   ? AppColors.primary
@@ -287,6 +293,7 @@ class _ComprehensiveTaskListScreenState
   }
 
   void _showDoneSheet(BuildContext context, List<TaskModel> doneTasks) {
+    final t = AppLocalizations.of(context)!;
     final sheetTasks = List<TaskModel>.of(doneTasks);
 
     showModalBottomSheet(
@@ -318,9 +325,9 @@ class _ComprehensiveTaskListScreenState
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
-                        const Text(
-                          "Completed Today",
-                          style: TextStyle(
+                        Text(
+                          t.completedTodayTitle,
+                          style: const TextStyle(
                             color: AppColors.text,
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
@@ -345,25 +352,16 @@ class _ComprehensiveTaskListScreenState
 
                         return TaskCard(
                           task: task,
-
-                          // ✅ Toggle to UNDONE inside sheet:
-                          // remove immediately from sheet + update cubit
                           onToggleDone: () {
                             setState(() {
-                              sheetTasks.removeWhere((t) => t.id == task.id);
+                              sheetTasks.removeWhere((x) => x.id == task.id);
                             });
-
-                            // This will make the task appear again in main screen lists
                             context.read<TasksCubit>().toggleDone(task);
                           },
-
-                          // ✅ Delete inside sheet:
-                          // remove immediately from sheet + delete in cubit
                           onDelete: () {
                             setState(() {
-                              sheetTasks.removeWhere((t) => t.id == task.id);
+                              sheetTasks.removeWhere((x) => x.id == task.id);
                             });
-
                             context.read<TasksCubit>().deleteTask(task.id);
                           },
                         );
@@ -386,7 +384,7 @@ class _ComprehensiveTaskListScreenState
       children: [
         Text(
           '$title${count > 0 ? " ($count)" : ""}',
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.text,
             fontWeight: FontWeight.w800,
             fontSize: 18,
@@ -396,12 +394,13 @@ class _ComprehensiveTaskListScreenState
     );
   }
 
-  // =========================
   Widget _filtersRow(
     BuildContext context,
     TasksFilter active,
     int overdueCount,
   ) {
+    final t = AppLocalizations.of(context)!;
+
     Widget chip(String text, TasksFilter f, {int? badgeCount}) {
       final selected = active == f;
 
@@ -436,16 +435,15 @@ class _ComprehensiveTaskListScreenState
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          chip("All", TasksFilter.all),
-          chip("Overdue", TasksFilter.overdue, badgeCount: overdueCount),
-          chip("Today", TasksFilter.today),
-          chip("High Priority", TasksFilter.highPriority),
+          chip(t.filterAll, TasksFilter.all),
+          chip(t.filterOverdue, TasksFilter.overdue, badgeCount: overdueCount),
+          chip(t.filterToday, TasksFilter.today),
+          chip(t.filterHighPriority, TasksFilter.highPriority),
         ],
       ),
     );
   }
 
-  /// تستخدم في وضع All: تخفي الـ section بالكامل لو فاضي
   List<Widget> _sectionIfNotEmpty({
     required BuildContext context,
     required String title,
@@ -465,31 +463,9 @@ class _ComprehensiveTaskListScreenState
     ];
   }
 
-  /// تستخدم في وضع فلتر واحد: لو فاضي تظهر Empty state بدل section
-  List<Widget> _singleView({
-    required BuildContext context,
-    required String title,
-    required List<TaskModel> tasks,
-    required String emptyText,
-    bool showCountBadge = false,
-  }) {
-    if (tasks.isEmpty) {
-      return [_emptyState(emptyText)];
-    }
-
-    return [
-      if (showCountBadge)
-        _sectionHeader(title, tasks.length)
-      else
-        _sectionLabel(title),
-      const SizedBox(height: 8),
-      ..._tasksList(context, tasks),
-    ];
-  }
-
   List<Widget> _tasksList(BuildContext context, List<TaskModel> tasks) {
-    return tasks.map((t) {
-      final exiting = _exiting.contains(t.id);
+    return tasks.map((x) {
+      final exiting = _exiting.contains(x.id);
 
       return AnimatedSize(
         duration: const Duration(milliseconds: 320),
@@ -500,9 +476,9 @@ class _ComprehensiveTaskListScreenState
           curve: Curves.easeOut,
           opacity: exiting ? 0.0 : 1.0,
           child: TaskCard(
-            task: t,
-            onToggleDone: () => _toggleWithExit(context, t),
-            onDelete: () => context.read<TasksCubit>().deleteTask(t.id),
+            task: x,
+            onToggleDone: () => _toggleWithExit(context, x),
+            onDelete: () => context.read<TasksCubit>().deleteTask(x.id),
           ),
         ),
       );
@@ -510,6 +486,8 @@ class _ComprehensiveTaskListScreenState
   }
 
   Widget _emptyState(String text, {VoidCallback? onAdd}) {
+    final t = AppLocalizations.of(context)!;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -545,7 +523,7 @@ class _ComprehensiveTaskListScreenState
             TextButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add),
-              label: const Text("Add task"),
+              label: Text(t.addTask),
             ),
           ],
         ],
@@ -553,7 +531,6 @@ class _ComprehensiveTaskListScreenState
     );
   }
 
-  // =========================
   Widget _sectionLabel(String title) {
     return Text(
       title,

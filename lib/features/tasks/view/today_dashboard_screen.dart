@@ -1,6 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:todo_list/data/local/hive_boxes.dart';
 import 'package:todo_list/data/models/task_model.dart';
+import 'package:todo_list/features/settings/view/settings_screen.dart';
+import 'package:todo_list/l10n/app_localizations.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/task_card.dart';
@@ -46,6 +53,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       floatingActionButton: FloatingActionButton(
@@ -68,18 +77,18 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             // ----------------------------
             // TODAY tasks (all: done + todo)
             // ----------------------------
-            final todayTasks = state.tasks.where((t) {
-              if (t.dueDateTime == null) return false;
-              return _isSameDay(_dateOnly(t.dueDateTime!), today);
+            final todayTasks = state.tasks.where((task) {
+              if (task.dueDateTime == null) return false;
+              return _isSameDay(_dateOnly(task.dueDateTime!), today);
             }).toList();
 
             final todayDone = todayTasks
-                .where((t) => t.status == TaskStatus.done.index)
+                .where((task) => task.status == TaskStatus.done.index)
                 .toList();
 
             final todayTodo =
                 todayTasks
-                    .where((t) => t.status != TaskStatus.done.index)
+                    .where((task) => task.status != TaskStatus.done.index)
                     .toList()
                   ..sort((a, b) => b.priority.compareTo(a.priority));
 
@@ -87,9 +96,9 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             // URGENT list: (todo + exiting)
             // so item stays during fade-out
             // ----------------------------
-            final urgentForToday = todayTasks.where((t) {
-              final isDone = t.status == TaskStatus.done.index;
-              return !isDone || _exiting.contains(t.id);
+            final urgentForToday = todayTasks.where((task) {
+              final isDone = task.status == TaskStatus.done.index;
+              return !isDone || _exiting.contains(task.id);
             }).toList()..sort((a, b) => b.priority.compareTo(a.priority));
 
             final leftToday = todayTodo.length;
@@ -100,53 +109,43 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             final int percent = (progress * 100).round();
 
             // ----------------------------
-            // UPCOMING preview (always show if exists)
-            // next days only + not done
+            // UPCOMING + OVERDUE (not done)
+            // - include tasks with no date
+            // - include all dated tasks except today (past + future)
+            // - sort overdue first, then upcoming, then no-date
             // ----------------------------
             final upcomingAll =
                 state.tasks
-                    .where((t) => t.status != TaskStatus.done.index)
-                    .where((t) {
-                      // include tasks with no date
-                      if (t.dueDateTime == null) return true;
-
-                      // keep only future-dated tasks (after today)
-                      return _dateOnly(t.dueDateTime!).isAfter(today);
+                    .where((task) => task.status != TaskStatus.done.index)
+                    .where((task) {
+                      if (task.dueDateTime == null) return true;
+                      final taskDay = _dateOnly(task.dueDateTime!);
+                      return !_isSameDay(taskDay, today);
                     })
                     .toList()
                   ..sort((a, b) {
                     final ad = a.dueDateTime;
                     final bd = b.dueDateTime;
 
-                    // Dated tasks first
                     if (ad == null && bd == null) return 0;
                     if (ad == null) return 1;
                     if (bd == null) return -1;
 
-                    // Both dated: earlier first
+                    final aOverdue = _dateOnly(ad).isBefore(today);
+                    final bOverdue = _dateOnly(bd).isBefore(today);
+
+                    if (aOverdue && !bOverdue) return -1;
+                    if (!aOverdue && bOverdue) return 1;
+
                     return ad.compareTo(bd);
                   });
+
             final upcomingTop = upcomingAll.take(3).toList();
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
               children: [
-                // ----------------------------
-                // HEADER
-                // ----------------------------
-                const Text(
-                  "Good Morning, Steven",
-                  style: TextStyle(
-                    color: AppColors.text,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "${now.day}/${now.month}/${now.year}",
-                  style: const TextStyle(color: AppColors.textMuted),
-                ),
+                _ValueListenableHeader(now: now),
 
                 const SizedBox(height: 24),
 
@@ -196,7 +195,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              leftToday == 0 ? "ALL DONE" : "DONE",
+                              leftToday == 0 ? t.allDone : t.done,
                               style: const TextStyle(
                                 color: AppColors.textMuted,
                                 fontWeight: FontWeight.w800,
@@ -211,8 +210,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                   const SizedBox(height: 24),
                   Text(
                     leftToday == 0
-                        ? "All tasks done for today 🎉"
-                        : "$leftToday task(s) left",
+                        ? t.allTasksDoneToday
+                        : t.tasksLeft(leftToday),
                     style: const TextStyle(
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w600,
@@ -228,29 +227,22 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                   const SizedBox(height: 24),
                   _sectionTitle(
                     context,
-                    "Urgent for Today",
+                    t.urgentForToday,
                     onSeeAll: () => _goToAllTasks(context),
                   ),
                   const SizedBox(height: 8),
-
-                  ...urgentForToday
-                      .map((t) => _animatedTask(context, t))
-                      .toList(),
+                  ...urgentForToday.map((task) => _animatedTask(context, task)),
                 ],
 
                 // ----------------------------
-                // TODAY COMPLETED (if all done OR if user wants to review)
-                // show when there are done tasks, and either:
-                // - all done, or
-                // - no urgent shown (leftToday==0)
+                // TODAY COMPLETED
                 // ----------------------------
                 if (todayDone.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _completedTodaySection(
                     context,
                     todayDone,
-                    initiallyExpanded:
-                        leftToday == 0, // لو كله خلص افتحها تلقائي
+                    initiallyExpanded: leftToday == 0,
                   ),
                 ],
 
@@ -283,6 +275,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
     String title, {
     VoidCallback? onSeeAll,
   }) {
+    final t = AppLocalizations.of(context)!;
+
     return Row(
       children: [
         Text(
@@ -297,17 +291,17 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
         if (onSeeAll != null)
           TextButton(
             onPressed: onSeeAll,
-            child: const Text(
-              "See all",
-              style: TextStyle(color: AppColors.primary),
+            child: Text(
+              t.seeAll,
+              style: const TextStyle(color: AppColors.primary),
             ),
           ),
       ],
     );
   }
 
-  Widget _animatedTask(BuildContext context, TaskModel t) {
-    final exiting = _exiting.contains(t.id);
+  Widget _animatedTask(BuildContext context, TaskModel task) {
+    final exiting = _exiting.contains(task.id);
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 350),
@@ -317,9 +311,9 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
         curve: Curves.easeOut,
         opacity: exiting ? 0.0 : 1.0,
         child: TaskCard(
-          task: t,
-          onToggleDone: () => _toggleFromToday(context, t),
-          onDelete: () => context.read<TasksCubit>().deleteTask(t.id),
+          task: task,
+          onToggleDone: () => _toggleFromToday(context, task),
+          onDelete: () => context.read<TasksCubit>().deleteTask(task.id),
         ),
       ),
     );
@@ -330,6 +324,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
     List<TaskModel> done, {
     bool initiallyExpanded = false,
   }) {
+    final t = AppLocalizations.of(context)!;
+
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: Container(
@@ -346,9 +342,10 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
           childrenPadding: const EdgeInsets.only(bottom: 8),
           title: Row(
             children: [
-              const Text(
-                "Today (Completed)",
-                style: TextStyle(
+              Text(
+                t.todayCompleted,
+
+                style: const TextStyle(
                   color: AppColors.textMuted,
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
@@ -380,13 +377,14 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
           ),
           children: done
               .map(
-                (t) => Opacity(
+                (task) => Opacity(
                   opacity: 0.65,
                   child: TaskCard(
-                    task: t,
+                    task: task,
                     onToggleDone: () =>
-                        context.read<TasksCubit>().toggleDone(t),
-                    onDelete: () => context.read<TasksCubit>().deleteTask(t.id),
+                        context.read<TasksCubit>().toggleDone(task),
+                    onDelete: () =>
+                        context.read<TasksCubit>().deleteTask(task.id),
                   ),
                 ),
               )
@@ -397,20 +395,22 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
   }
 
   Widget _upcomingSection(BuildContext context, List<TaskModel> upcomingTop) {
+    final t = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionTitle(
           context,
-          "Upcoming",
+          t.upcoming,
           onSeeAll: () => _goToAllTasks(context),
         ),
         const SizedBox(height: 8),
         ...upcomingTop.map(
-          (t) => TaskCard(
-            task: t,
-            onToggleDone: () => context.read<TasksCubit>().toggleDone(t),
-            onDelete: () => context.read<TasksCubit>().deleteTask(t.id),
+          (task) => TaskCard(
+            task: task,
+            onToggleDone: () => context.read<TasksCubit>().toggleDone(task),
+            onDelete: () => context.read<TasksCubit>().deleteTask(task.id),
           ),
         ),
       ],
@@ -418,6 +418,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
   }
 
   Widget _todayEmptyCard(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -444,18 +446,18 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            "Nothing scheduled for today ✨",
-            style: TextStyle(
+          Text(
+            t.nothingScheduled,
+            style: const TextStyle(
               color: AppColors.text,
               fontWeight: FontWeight.w800,
               fontSize: 16,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            "Add a task and start your day.",
-            style: TextStyle(
+          Text(
+            t.addTaskStartDay,
+            style: const TextStyle(
               color: AppColors.textMuted,
               fontWeight: FontWeight.w600,
             ),
@@ -472,10 +474,131 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                 );
               },
               icon: const Icon(Icons.add),
-              label: const Text("Add task"),
+              label: Text(t.addTask),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ValueListenableHeader extends StatelessWidget {
+  final DateTime now;
+  const _ValueListenableHeader({required this.now});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+    final prefs = Hive.box(HiveBoxs.prefs);
+
+    final locale = Localizations.localeOf(context).languageCode;
+    final dateText = DateFormat('EEE, d MMM', locale).format(now);
+
+    return ValueListenableBuilder(
+      valueListenable: prefs.listenable(
+        keys: const ['user_name', 'user_photo_path'],
+      ),
+      builder: (context, Box box, _) {
+        final rawName = (box.get('user_name') as String?)?.trim();
+        final name = (rawName != null && rawName.isNotEmpty) ? rawName : 'User';
+
+        final rawPath = (box.get('user_photo_path') as String?)?.trim();
+        final File? photoFile =
+            (rawPath != null &&
+                rawPath.isNotEmpty &&
+                File(rawPath).existsSync())
+            ? File(rawPath)
+            : null;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _Avatar(photoFile: photoFile),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.welcomeBack,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.text,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 14,
+                        color: AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        dateText,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+              icon: const Icon(
+                Icons.settings_rounded,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  final File? photoFile;
+  const _Avatar({required this.photoFile});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
+      child: ClipOval(
+        child: photoFile != null
+            ? Image.file(photoFile!, fit: BoxFit.cover)
+            : Container(
+                color: AppColors.surface,
+                child: const Icon(Icons.person, color: AppColors.textMuted),
+              ),
       ),
     );
   }

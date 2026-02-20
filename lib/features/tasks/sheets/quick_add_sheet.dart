@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
 import 'package:uuid/uuid.dart';
+
+// ✅ your generated localizations path
+import 'package:todo_list/l10n/app_localizations.dart';
 
 class QuickAddSheet extends StatefulWidget {
   const QuickAddSheet({super.key});
@@ -28,6 +32,18 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
     _tagController.dispose();
     _titleController.dispose();
     super.dispose();
+  }
+
+  String _priorityLabel(BuildContext context, TaskPriority p) {
+    final t = AppLocalizations.of(context)!;
+    switch (p) {
+      case TaskPriority.low:
+        return t.priorityLow;
+      case TaskPriority.medium:
+        return t.priorityMedium;
+      case TaskPriority.high:
+        return t.priorityHigh;
+    }
   }
 
   Future<void> _pickDueDateTime() async {
@@ -91,7 +107,6 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
 
   void _submit() {
     final title = _titleController.text.trim();
-
     if (title.isEmpty) return;
 
     final task = TaskModel.newTask(
@@ -100,7 +115,6 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       priority: _priority,
       tags: List.unmodifiable(_tags),
       dueDateTime: _dueDateTime,
-      
     );
 
     context.read<TasksCubit>().createTask(task);
@@ -109,6 +123,8 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Padding(
       padding: EdgeInsets.only(
         top: 16,
@@ -133,8 +149,8 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
             child: Row(
               children: [
                 Text(
-                  'Quick Add Task',
-                  style: TextStyle(
+                  t.quickAddTaskTitle,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -143,9 +159,9 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 const Spacer(),
                 glassButton(
                   onPressed: _submit,
-                  child: const Text(
-                    "Add",
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  child: Text(
+                    t.add,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -157,7 +173,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
             autofocus: true,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: 'Task title...',
+              hintText: t.taskTitleHint,
               hintStyle: const TextStyle(color: Colors.white54),
               filled: true,
               fillColor: const Color(0xFF1E2935),
@@ -166,7 +182,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 borderSide: BorderSide.none,
               ),
             ),
-            onSubmitted: (value) => _submit(),
+            onSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 12),
           Row(
@@ -175,7 +191,9 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 onPressed: _pickDueDateTime,
                 icon: const Icon(Icons.calendar_today, size: 18),
                 label: Text(
-                  _dueDateTime == null ? "Due" : _formatDue(_dueDateTime!),
+                  _dueDateTime == null
+                      ? t.due
+                      : _formatDue(context, _dueDateTime!),
                 ),
               ),
               const Spacer(flex: 1),
@@ -184,11 +202,23 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _priorityChip(TaskPriority.low, "LOW"),
+              _priorityChip(
+                context,
+                TaskPriority.low,
+                _priorityLabel(context, TaskPriority.low),
+              ),
               const SizedBox(width: 8),
-              _priorityChip(TaskPriority.medium, "MED"),
+              _priorityChip(
+                context,
+                TaskPriority.medium,
+                _priorityLabel(context, TaskPriority.medium),
+              ),
               const SizedBox(width: 8),
-              _priorityChip(TaskPriority.high, "HIGH"),
+              _priorityChip(
+                context,
+                TaskPriority.high,
+                _priorityLabel(context, TaskPriority.high),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -198,9 +228,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 child: TextField(
                   controller: _tagController,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    hintText: "Add tags (e.g. work, urgent)",
-                  ),
+                  decoration: InputDecoration(hintText: t.addTagsHint),
                   onSubmitted: (_) => _addTag(),
                 ),
               ),
@@ -244,10 +272,11 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
     );
   }
 
-  String _formatDue(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return "${dt.day}/${dt.month} $h:$m";
+  String _formatDue(BuildContext context, DateTime dt) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final date = DateFormat('d/M', locale).format(dt);
+    final time = DateFormat('HH:mm', locale).format(dt);
+    return '$date  $time';
   }
 
   Widget glassButton({required VoidCallback onPressed, required Widget child}) {
@@ -280,7 +309,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
     }
   }
 
-  Widget _priorityChip(TaskPriority p, String label) {
+  Widget _priorityChip(BuildContext context, TaskPriority p, String label) {
     final selected = _priority == p;
     final c = _pColor(p);
 
@@ -295,7 +324,6 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               ? c.withAlpha((0.38 * 255).toInt())
               : c.withAlpha((0.14 * 255).toInt()),
           borderRadius: BorderRadius.circular(14),
-
           border: Border.all(
             color: selected
                 ? c.withAlpha((0.9 * 255).toInt())
