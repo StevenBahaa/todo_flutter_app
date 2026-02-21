@@ -229,4 +229,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String overdueCount(int count) {
     return '$count overdue';
   }
+
+  @override
+  String get editName => 'Edit Name';
+
+  @override
+  String get yourName => 'Your name';
+
+  @override
+  String get changePhoto => 'Change Photo';
+
+  @override
+  String get removePhoto => 'Remove Photo';
+
+  @override
+  String get save => 'Save';
 }

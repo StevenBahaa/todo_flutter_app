@@ -232,4 +232,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String overdueCount(int count) {
     return '$count متأخرة';
   }
+
+  @override
+  String get editName => 'تعديل الاسم';
+
+  @override
+  String get yourName => 'اسمك';
+
+  @override
+  String get changePhoto => 'تغيير الصورة';
+
+  @override
+  String get removePhoto => 'حذف الصورة';
+
+  @override
+  String get save => 'حفظ';
 }

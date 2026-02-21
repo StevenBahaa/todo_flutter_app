@@ -114,5 +114,12 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+
+  "editName": "تعديل الاسم",
+  "yourName": "اسمك",
+  "changePhoto": "تغيير الصورة",
+  "removePhoto": "حذف الصورة",
+  "save": "حفظ"
+
 }

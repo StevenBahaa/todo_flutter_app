@@ -3,94 +3,109 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:todo_list/core/theme/theme_x.dart';
+import 'package:todo_list/core/utils/responsive.dart';
+import 'package:todo_list/l10n/app_localizations.dart';
+
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
-import 'package:todo_list/core/theme/theme_x.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final r = R(context);
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: context.bg,
-      appBar: AppBar(title: const Text("Settings")),
+      appBar: AppBar(title: Text(t.settings)),
       body: BlocBuilder<SettingsCubit, SettingsState>(
         builder: (context, s) {
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(r.sp(16)),
             children: [
-              // ================= PROFILE HEADER =================
               Center(
                 child: Column(
                   children: [
                     Stack(
                       children: [
                         CircleAvatar(
-                          radius: 42,
+                          radius: r.sp(42),
                           backgroundColor: context.surface,
                           backgroundImage: s.userPhotoPath != null
                               ? FileImage(File(s.userPhotoPath!))
                               : null,
                           child: s.userPhotoPath == null
-                              ? const Icon(Icons.person, size: 36)
+                              ? Icon(
+                                  Icons.person,
+                                  size: r.sp(36),
+                                  color: context.textMuted,
+                                )
                               : null,
                         ),
                         Positioned(
                           right: 0,
                           bottom: 0,
                           child: GestureDetector(
-                            onTap: () => _pickImage(context),
+                            onTap: () => _profileSheet(context, s),
                             child: Container(
-                              padding: const EdgeInsets.all(6),
+                              padding: EdgeInsets.all(r.sp(6)),
                               decoration: BoxDecoration(
                                 color: context.primary,
                                 shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: context.bg.withOpacity(0.15),
+                                ),
                               ),
-                              child: const Icon(Icons.edit, size: 16),
+                              child: Icon(
+                                Icons.edit,
+                                size: r.sp(16),
+                                color: context.scheme.onPrimary,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: r.sp(12)),
 
                     GestureDetector(
                       onTap: () => _editName(context, s.userName),
                       child: Text(
                         s.userName,
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: r.fs(22),
                           fontWeight: FontWeight.w800,
                           color: context.text,
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 6),
+                    SizedBox(height: r.sp(6)),
 
                     TextButton(
-                      onPressed: () => _editName(context, s.userName),
-                      child: const Text("Manage Profile"),
+                      onPressed: () => _profileSheet(context, s),
+                      child: Text(t.manageProfile),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 28),
+              SizedBox(height: r.sp(28)),
 
-              // ================= PREFERENCES CARD =================
               _card(
                 context,
+                padding: r.sp(14),
                 children: [
-                  // THEME
                   Row(
                     children: [
                       Icon(Icons.dark_mode, color: context.primary),
-                      const SizedBox(width: 12),
+                      SizedBox(width: r.sp(12)),
                       Expanded(
                         child: Text(
-                          "Theme",
+                          t.theme,
                           style: TextStyle(color: context.text),
                         ),
                       ),
@@ -98,19 +113,23 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
 
-                  const Divider(),
+                  SizedBox(height: r.sp(10)),
+                  Divider(color: context.border),
+                  SizedBox(height: r.sp(6)),
 
-                  // LANGUAGE
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(Icons.language, color: context.primary),
                     title: Text(
-                      "Language",
+                      t.language,
                       style: TextStyle(color: context.text),
                     ),
                     trailing: Text(
-                      s.langCode == 'ar' ? "العربية" : "English",
-                      style: TextStyle(color: context.textMuted),
+                      s.langCode == 'ar' ? t.arabic : t.english,
+                      style: TextStyle(
+                        color: context.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     onTap: () => _languageSheet(context),
                   ),
@@ -123,11 +142,13 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // ================= UI HELPERS =================
-
-  Widget _card(BuildContext context, {required List<Widget> children}) {
+  Widget _card(
+    BuildContext context, {
+    required double padding,
+    required List<Widget> children,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: context.surface,
         borderRadius: BorderRadius.circular(18),
@@ -137,25 +158,35 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // ================= THEME SELECTOR =================
   Widget _themeSelector(BuildContext context, ThemeMode mode) {
+    final t = AppLocalizations.of(context)!;
+
     return SegmentedButton<ThemeMode>(
       showSelectedIcon: false,
-      style: ButtonStyle(
-        backgroundColor: WidgetStatePropertyAll(context.surface),
-      ),
-      segments: const [
-        ButtonSegment(value: ThemeMode.light, label: Text("Light")),
-        ButtonSegment(value: ThemeMode.dark, label: Text("Dark")),
+      segments: [
+        ButtonSegment(value: ThemeMode.light, label: Text(t.light)),
+        ButtonSegment(value: ThemeMode.dark, label: Text(t.dark)),
       ],
       selected: {mode},
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return context.primary.withAlpha((0.18 * 255).toInt());
+          }
+          return context.surface;
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return context.primary;
+          return context.textMuted;
+        }),
+        side: WidgetStatePropertyAll(BorderSide(color: context.border)),
+      ),
       onSelectionChanged: (v) {
         context.read<SettingsCubit>().setThemeMode(v.first);
       },
     );
   }
 
-  // ================= IMAGE PICK =================
   Future<void> _pickImage(BuildContext context) async {
     final picker = ImagePicker();
     final x = await picker.pickImage(source: ImageSource.gallery);
@@ -163,54 +194,125 @@ class SettingsScreen extends StatelessWidget {
     context.read<SettingsCubit>().setPhotoPath(x.path);
   }
 
-  // ================= NAME EDIT =================
   void _editName(BuildContext context, String current) {
+    final t = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: current);
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: context.surface,
-        title: const Text("Edit Name"),
-        content: TextField(controller: controller),
+        title: Text(t.editName),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(hintText: t.yourName),
+        ),
         actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(t.cancel),
+          ),
           TextButton(
             onPressed: () {
               context.read<SettingsCubit>().setName(controller.text);
               Navigator.pop(context);
             },
-            child: const Text("Save"),
+            child: Text(t.save),
           ),
         ],
       ),
     );
   }
 
-  // ================= LANGUAGE SHEET =================
   void _languageSheet(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     showModalBottomSheet(
       context: context,
+      backgroundColor: context.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
       builder: (_) {
-        return Container(
-          color: context.surface,
+        return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: const Text("English"),
+                title: Text(t.english, style: TextStyle(color: context.text)),
                 onTap: () {
                   context.read<SettingsCubit>().setLanguage('en');
                   Navigator.pop(context);
                 },
               ),
               ListTile(
-                title: const Text("العربية"),
+                title: Text(t.arabic, style: TextStyle(color: context.text)),
                 onTap: () {
                   context.read<SettingsCubit>().setLanguage('ar');
                   Navigator.pop(context);
                 },
               ),
+              const SizedBox(height: 6),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _profileSheet(BuildContext context, SettingsState s) {
+    final t = AppLocalizations.of(context)!;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.edit, color: context.primary),
+                  title: Text(
+                    t.editName,
+                    style: TextStyle(color: context.text),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _editName(context, s.userName);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.photo, color: context.primary),
+                  title: Text(
+                    t.changePhoto,
+                    style: TextStyle(color: context.text),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _pickImage(context);
+                  },
+                ),
+                if (s.userPhotoPath != null)
+                  ListTile(
+                    leading: Icon(Icons.delete, color: context.danger),
+                    title: Text(
+                      t.removePhoto,
+                      style: TextStyle(color: context.text),
+                    ),
+                    onTap: () {
+                      context.read<SettingsCubit>().setPhotoPath(null);
+                      Navigator.pop(context);
+                    },
+                  ),
+              ],
+            ),
           ),
         );
       },

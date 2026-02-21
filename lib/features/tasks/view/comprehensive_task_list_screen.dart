@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:todo_list/core/theme/app_colors.dart';
-import 'package:todo_list/features/tasks/widgets/task_card.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
+import 'package:todo_list/core/utils/responsive.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_filter.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_state.dart';
 import 'package:todo_list/features/tasks/sheets/quick_add_sheet.dart';
-
-// ✅ localization import (your project path)
+import 'package:todo_list/features/tasks/utils/tasks_groups.dart';
+import 'package:todo_list/features/tasks/widgets/task_card.dart';
+import 'package:todo_list/features/tasks/widgets/tasks_filters_bar.dart';
+import 'package:todo_list/features/tasks/widgets/tasks_section_header.dart';
 import 'package:todo_list/l10n/app_localizations.dart';
-import 'package:todo_list/core/theme/theme_x.dart';
 
 class ComprehensiveTaskListScreen extends StatefulWidget {
   const ComprehensiveTaskListScreen({super.key});
@@ -24,11 +25,6 @@ class ComprehensiveTaskListScreen extends StatefulWidget {
 
 class _ComprehensiveTaskListScreenState
     extends State<ComprehensiveTaskListScreen> {
-  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
   final Set<String> _exiting = {};
 
   Future<void> _toggleWithExit(BuildContext context, TaskModel t) async {
@@ -36,7 +32,6 @@ class _ComprehensiveTaskListScreenState
 
     if (!wasDone) {
       setState(() => _exiting.add(t.id));
-
       context.read<TasksCubit>().toggleDone(t);
 
       await Future.delayed(const Duration(milliseconds: 320));
@@ -48,9 +43,18 @@ class _ComprehensiveTaskListScreenState
     }
   }
 
+  void _openQuickAdd(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const QuickAddSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return Scaffold(
       backgroundColor: context.bg,
@@ -64,318 +68,114 @@ class _ComprehensiveTaskListScreenState
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (_) => const QuickAddSheet(),
-          );
-        },
+        onPressed: () => _openQuickAdd(context),
         child: const Icon(Icons.add),
       ),
       body: BlocBuilder<TasksCubit, TasksState>(
         builder: (context, state) {
           final now = DateTime.now();
-          final today = _dateOnly(now);
+          final g = buildTaskGroups(
+            all: state.tasks,
+            exitingIds: _exiting,
+            now: now,
+          );
 
-          // Active tasks only (not done) + include exiting items
-          final active = state.tasks.where((x) {
-            final isDone = x.status == TaskStatus.done.index;
-            return !isDone || _exiting.contains(x.id);
-          }).toList();
+          final padding = EdgeInsets.fromLTRB(
+            r.sp(12),
+            r.sp(8),
+            r.sp(12),
+            r.sp(110),
+          );
 
-          final doneTasks = state.tasks
-              .where((x) => x.status == TaskStatus.done.index)
-              .toList();
-
-          final overdue = active
-              .where(
-                (x) => x.dueDateTime != null && x.dueDateTime!.isBefore(now),
-              )
-              .toList();
-
-          final todayTasks = active
-              .where(
-                (x) =>
-                    x.dueDateTime != null &&
-                    _isSameDay(_dateOnly(x.dueDateTime!), today) &&
-                    !x.dueDateTime!.isBefore(now),
-              )
-              .toList();
-
-          final upcoming = active
-              .where(
-                (x) =>
-                    x.dueDateTime != null &&
-                    _dateOnly(x.dueDateTime!).isAfter(today),
-              )
-              .toList();
-
-          final noDate = active.where((x) => x.dueDateTime == null).toList();
-
-          final highPriority = active
-              .where(
-                (x) => TaskPriority.values[x.priority] == TaskPriority.high,
-              )
-              .toList();
-
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 110),
-            children: [
-              _filtersRow(context, state.filter, overdue.length),
-              const SizedBox(height: 12),
-
-              if (state.filter == TasksFilter.overdue) ...[
-                _filterHeader(context, t.overdueTitle, overdue.length),
-                const SizedBox(height: 10),
-                if (overdue.isEmpty)
-                  _emptyState(t.noOverdueTasks)
-                else
-                  ..._tasksList(context, overdue),
-              ] else if (state.filter == TasksFilter.today) ...[
-                _filterHeader(context, t.todayTitle, todayTasks.length),
-                const SizedBox(height: 10),
-                if (todayTasks.isEmpty)
-                  _emptyState(t.noTasksForToday)
-                else
-                  ..._tasksList(context, todayTasks),
-              ] else if (state.filter == TasksFilter.highPriority) ...[
-                _filterHeader(
-                  context,
-                  t.highPriorityTitle,
-                  highPriority.length,
-                ),
-                const SizedBox(height: 10),
-                if (highPriority.isEmpty)
-                  _emptyState(t.noHighPriorityTasks)
-                else
-                  ..._tasksList(context, highPriority),
-              ] else ...[
-                if (overdue.isEmpty &&
-                    todayTasks.isEmpty &&
-                    upcoming.isEmpty &&
-                    noDate.isEmpty)
-                  _emptyState(
-                    t.noTasksYet,
-                    onAdd: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        builder: (_) => const QuickAddSheet(),
-                      );
-                    },
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: ListView(
+                padding: padding,
+                children: [
+                  TasksFiltersBar(
+                    active: state.filter,
+                    overdueCount: g.overdue.length,
                   ),
+                  SizedBox(height: r.sp(12)),
 
-                ..._sectionIfNotEmpty(
-                  context: context,
-                  title: t.sectionOverdueUpper,
-                  tasks: overdue,
-                  headerWithCount: true,
-                ),
-                ..._sectionIfNotEmpty(
-                  context: context,
-                  title: t.sectionTodayUpper,
-                  tasks: todayTasks,
-                ),
-                ..._sectionIfNotEmpty(
-                  context: context,
-                  title: t.sectionUpcomingUpper,
-                  tasks: upcoming,
-                ),
-                ..._sectionIfNotEmpty(
-                  context: context,
-                  title: t.sectionNoDateUpper,
-                  tasks: noDate,
-                ),
+                  // ===== Filter mode =====
+                  if (state.filter == TasksFilter.overdue) ...[
+                    _filterHeader(context, t.overdueTitle, g.overdue.length),
+                    SizedBox(height: r.sp(10)),
+                    if (g.overdue.isEmpty)
+                      _emptyState(context, t.noOverdueTasks)
+                    else
+                      ..._tasksList(context, g.overdue),
+                  ] else if (state.filter == TasksFilter.today) ...[
+                    _filterHeader(context, t.todayTitle, g.today.length),
+                    SizedBox(height: r.sp(10)),
+                    if (g.today.isEmpty)
+                      _emptyState(context, t.noTasksForToday)
+                    else
+                      ..._tasksList(context, g.today),
+                  ] else if (state.filter == TasksFilter.highPriority) ...[
+                    _filterHeader(
+                      context,
+                      t.highPriorityTitle,
+                      g.highPriority.length,
+                    ),
+                    SizedBox(height: r.sp(10)),
+                    if (g.highPriority.isEmpty)
+                      _emptyState(context, t.noHighPriorityTasks)
+                    else
+                      ..._tasksList(context, g.highPriority),
+                  ] else ...[
+                    // ===== All sections =====
+                    if (g.overdue.isEmpty &&
+                        g.today.isEmpty &&
+                        g.upcoming.isEmpty &&
+                        g.noDate.isEmpty)
+                      _emptyState(
+                        context,
+                        t.noTasksYet,
+                        onAdd: () => _openQuickAdd(context),
+                      ),
 
-                if (state.filter == TasksFilter.all &&
-                    doneTasks.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _doneSummaryRow(context, doneTasks),
+                    ..._section(
+                      context,
+                      title: t.sectionOverdueUpper,
+                      tasks: g.overdue,
+                      count: g.overdue.length,
+                      countColor: context.danger,
+                    ),
+                    ..._section(
+                      context,
+                      title: t.sectionTodayUpper,
+                      tasks: g.today,
+                    ),
+                    ..._section(
+                      context,
+                      title: t.sectionUpcomingUpper,
+                      tasks: g.upcoming,
+                    ),
+                    ..._section(
+                      context,
+                      title: t.sectionNoDateUpper,
+                      tasks: g.noDate,
+                    ),
+
+                    if (g.done.isNotEmpty) ...[
+                      SizedBox(height: r.sp(6)),
+                      _doneSummaryRow(context, g.done),
+                    ],
+                  ],
                 ],
-              ],
-            ],
+              ),
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _doneSummaryRow(BuildContext context, List<TaskModel> doneTasks) {
-    final t = AppLocalizations.of(context)!;
-    final hasDone = doneTasks.isNotEmpty;
-
-    final countChipBg = hasDone
-        ? context.primary.withAlpha((0.14 * 255).toInt())
-        : context.textMuted.withAlpha((0.10 * 255).toInt());
-
-    final countChipBorder = hasDone
-        ? context.primary.withAlpha((0.35 * 255).toInt())
-        : context.border;
-
-    final countChipText = hasDone ? context.primary : context.textMuted;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.border),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_circle,
-            color: hasDone ? context.success : context.textMuted,
-            size: 18,
-          ),
-          const SizedBox(width: 10),
-
-          Text(
-            t.completedLabel,
-            style: TextStyle(color: context.text, fontWeight: FontWeight.w800),
-          ),
-
-          const SizedBox(width: 10),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: countChipBg,
-              borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: countChipBorder),
-            ),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, anim) =>
-                  ScaleTransition(scale: anim, child: child),
-              child: Text(
-                "${doneTasks.length}",
-                key: ValueKey(doneTasks.length),
-                style: TextStyle(
-                  color: countChipText,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
-
-          const Spacer(),
-
-          TextButton.icon(
-            onPressed: hasDone
-                ? () => _showDoneSheet(context, doneTasks)
-                : null,
-            icon: const Icon(Icons.visibility, size: 16),
-            label: Text(t.view),
-            style: TextButton.styleFrom(
-              foregroundColor: hasDone ? context.primary : context.textMuted,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: hasDone
-                      ? context.primary.withAlpha((0.35 * 255).toInt())
-                      : context.border,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDoneSheet(BuildContext context, List<TaskModel> doneTasks) {
-    final t = AppLocalizations.of(context)!;
-    final sheetTasks = List<TaskModel>.of(doneTasks);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: context.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 10),
-                  Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: context.border,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        Text(
-                          t.completedTodayTitle,
-                          style: TextStyle(
-                            color: context.text,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          "${sheetTasks.length}",
-                          style: TextStyle(color: context.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: sheetTasks.length,
-                      itemBuilder: (context, i) {
-                        final task = sheetTasks[i];
-
-                        return TaskCard(
-                          task: task,
-                          onToggleDone: () {
-                            setState(() {
-                              sheetTasks.removeWhere((x) => x.id == task.id);
-                            });
-                            context.read<TasksCubit>().toggleDone(task);
-                          },
-                          onDelete: () {
-                            setState(() {
-                              sheetTasks.removeWhere((x) => x.id == task.id);
-                            });
-                            context.read<TasksCubit>().deleteTask(task.id);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _filterHeader(BuildContext context, String title, int count) {
+    final r = R(context);
     return Row(
       children: [
         Text(
@@ -383,79 +183,28 @@ class _ComprehensiveTaskListScreenState
           style: TextStyle(
             color: context.text,
             fontWeight: FontWeight.w800,
-            fontSize: 18,
+            fontSize: r.fs(18),
           ),
         ),
       ],
     );
   }
 
-  Widget _filtersRow(
-    BuildContext context,
-    TasksFilter active,
-    int overdueCount,
-  ) {
-    final t = AppLocalizations.of(context)!;
-
-    Widget chip(String text, TasksFilter f, {int? badgeCount}) {
-      final selected = active == f;
-
-      return Padding(
-        padding: const EdgeInsets.only(right: 10),
-        child: ChoiceChip(
-          selected: selected,
-          onSelected: (_) => context.read<TasksCubit>().setFilter(f),
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(text),
-              if (badgeCount != null && badgeCount > 0) ...[
-                const SizedBox(width: 8),
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: context.danger,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: context.surface, width: 1.5),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          chip(t.filterAll, TasksFilter.all),
-          chip(t.filterOverdue, TasksFilter.overdue, badgeCount: overdueCount),
-          chip(t.filterToday, TasksFilter.today),
-          chip(t.filterHighPriority, TasksFilter.highPriority),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _sectionIfNotEmpty({
-    required BuildContext context,
+  List<Widget> _section(
+    BuildContext context, {
     required String title,
     required List<TaskModel> tasks,
-    bool headerWithCount = false,
+    int? count,
+    Color? countColor,
   }) {
+    final r = R(context);
     if (tasks.isEmpty) return [];
 
     return [
-      if (headerWithCount)
-        _sectionHeader(title, tasks.length)
-      else
-        _sectionLabel(title),
-      const SizedBox(height: 8),
+      TasksSectionHeader(title: title, count: count, countColor: countColor),
+      SizedBox(height: r.sp(8)),
       ..._tasksList(context, tasks),
-      const SizedBox(height: 16),
+      SizedBox(height: r.sp(16)),
     ];
   }
 
@@ -481,11 +230,12 @@ class _ComprehensiveTaskListScreenState
     }).toList();
   }
 
-  Widget _emptyState(String text, {VoidCallback? onAdd}) {
+  Widget _emptyState(BuildContext context, String text, {VoidCallback? onAdd}) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(r.sp(18)),
       decoration: BoxDecoration(
         color: context.surface,
         borderRadius: BorderRadius.circular(18),
@@ -495,8 +245,8 @@ class _ComprehensiveTaskListScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: r.sp(40),
+            height: r.sp(40),
             decoration: BoxDecoration(
               color: context.primary.withAlpha((0.18 * 255).toInt()),
               borderRadius: BorderRadius.circular(12),
@@ -506,7 +256,7 @@ class _ComprehensiveTaskListScreenState
             ),
             child: Icon(Icons.inbox_outlined, color: context.primary),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.sp(12)),
           Text(
             text,
             style: TextStyle(
@@ -515,7 +265,7 @@ class _ComprehensiveTaskListScreenState
             ),
           ),
           if (onAdd != null) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: r.sp(12)),
             TextButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add),
@@ -527,42 +277,184 @@ class _ComprehensiveTaskListScreenState
     );
   }
 
-  Widget _sectionLabel(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        color: context.textMuted,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.2,
-        fontSize: 12,
+  // ===== Done summary + sheet (زي ما هو عندك، لكن responsive بسيط) =====
+
+  Widget _doneSummaryRow(BuildContext context, List<TaskModel> doneTasks) {
+    final t = AppLocalizations.of(context)!;
+    final r = R(context);
+    final hasDone = doneTasks.isNotEmpty;
+
+    final countChipBg = hasDone
+        ? context.primary.withAlpha((0.14 * 255).toInt())
+        : context.textMuted.withAlpha((0.10 * 255).toInt());
+
+    final countChipBorder = hasDone
+        ? context.primary.withAlpha((0.35 * 255).toInt())
+        : context.border;
+
+    final countChipText = hasDone ? context.primary : context.textMuted;
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: r.sp(12), vertical: r.sp(6)),
+      padding: EdgeInsets.symmetric(horizontal: r.sp(14), vertical: r.sp(12)),
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.border),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle,
+            color: hasDone ? context.success : context.textMuted,
+            size: r.sp(18),
+          ),
+          SizedBox(width: r.sp(10)),
+          Text(
+            t.completedLabel,
+            style: TextStyle(color: context.text, fontWeight: FontWeight.w800),
+          ),
+          SizedBox(width: r.sp(10)),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: r.sp(10),
+              vertical: r.sp(5),
+            ),
+            decoration: BoxDecoration(
+              color: countChipBg,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: countChipBorder),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
+              child: Text(
+                "${doneTasks.length}",
+                key: ValueKey(doneTasks.length),
+                style: TextStyle(
+                  color: countChipText,
+                  fontWeight: FontWeight.w900,
+                  fontSize: r.fs(12),
+                ),
+              ),
+            ),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: hasDone
+                ? () => _showDoneSheet(context, doneTasks)
+                : null,
+            icon: const Icon(Icons.visibility, size: 16),
+            label: Text(t.view),
+            style: TextButton.styleFrom(
+              foregroundColor: hasDone ? context.primary : context.textMuted,
+              padding: EdgeInsets.symmetric(
+                horizontal: r.sp(12),
+                vertical: r.sp(10),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: hasDone
+                      ? context.primary.withAlpha((0.35 * 255).toInt())
+                      : context.border,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _sectionHeader(String title, int count) {
-    return Row(
-      children: [
-        _sectionLabel(title),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: context.danger.withAlpha((0.20 * 255).toInt()),
-            borderRadius: BorderRadius.circular(99),
-            border: Border.all(
-              color: context.danger.withAlpha((0.55 * 255).toInt()),
-            ),
-          ),
-          child: Text(
-            "$count",
-            style: TextStyle(
-              color: context.danger,
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ],
+  void _showDoneSheet(BuildContext context, List<TaskModel> doneTasks) {
+    final t = AppLocalizations.of(context)!;
+    final r = R(context);
+    final sheetTasks = List<TaskModel>.of(doneTasks);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: r.sp(10)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(height: r.sp(10)),
+                    Container(
+                      width: r.sp(44),
+                      height: r.sp(5),
+                      decoration: BoxDecoration(
+                        color: context.border,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                    SizedBox(height: r.sp(14)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: r.sp(16)),
+                      child: Row(
+                        children: [
+                          Text(
+                            t.completedTodayTitle,
+                            style: TextStyle(
+                              color: context.text,
+                              fontWeight: FontWeight.w900,
+                              fontSize: r.fs(16),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            "${sheetTasks.length}",
+                            style: TextStyle(color: context.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: r.sp(12)),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: sheetTasks.length,
+                        itemBuilder: (context, i) {
+                          final task = sheetTasks[i];
+                          return TaskCard(
+                            task: task,
+                            onToggleDone: () {
+                              setState(
+                                () => sheetTasks.removeWhere(
+                                  (x) => x.id == task.id,
+                                ),
+                              );
+                              context.read<TasksCubit>().toggleDone(task);
+                            },
+                            onDelete: () {
+                              setState(
+                                () => sheetTasks.removeWhere(
+                                  (x) => x.id == task.id,
+                                ),
+                              );
+                              context.read<TasksCubit>().deleteTask(task.id);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

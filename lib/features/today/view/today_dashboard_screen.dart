@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:todo_list/core/theme/theme_x.dart';
+import 'package:todo_list/core/utils/responsive.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
@@ -56,6 +57,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
+    final ring = (r.shortest * 0.52).clamp(150.0, 210.0);
 
     return Scaffold(
       backgroundColor: context.bg,
@@ -78,22 +81,28 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             final incomingTop = groups.incomingActive.take(3).toList();
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+              padding: EdgeInsets.fromLTRB(
+                r.sp(16),
+                r.sp(20),
+                r.sp(16),
+                r.sp(120),
+              ),
               children: [
                 TodayHeader(now: now),
 
-                const SizedBox(height: 24),
+                SizedBox(height: r.sp(24)),
 
                 if (groups.totalForProgress == 0) ...[
                   _todayEmptyCard(context, onAdd: () => _openQuickAdd(context)),
                 ] else ...[
                   _progressRing(
                     context,
+                    ring: ring,
                     percent: groups.percent,
                     progress: groups.progress,
                     leftCount: groups.leftCount,
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: r.sp(24)),
                   Text(
                     groups.leftCount == 0
                         ? t.allTasksDoneToday
@@ -107,20 +116,20 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                 ],
 
                 if (groups.todayOverdueActive.isNotEmpty) ...[
-                  const SizedBox(height: 24),
+                  SizedBox(height: r.sp(24)),
                   _sectionTitle(
                     context,
                     t.todayTasks,
                     onSeeAll: () => _goToAllTasks(context),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: r.sp(8)),
                   ...groups.todayOverdueActive.map(
                     (task) => _animatedTask(context, task),
                   ),
                 ],
 
                 if (groups.completedSorted.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  SizedBox(height: r.sp(16)),
                   _completedTodaySection(
                     context,
                     groups.completedSorted,
@@ -129,13 +138,13 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                 ],
 
                 if (incomingTop.isNotEmpty) ...[
-                  const SizedBox(height: 24),
+                  SizedBox(height: r.sp(24)),
                   _sectionTitle(
                     context,
                     t.incoming,
                     onSeeAll: () => _goToAllTasks(context),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: r.sp(8)),
                   ...incomingTop.map(
                     (task) => TaskCard(
                       task: task,
@@ -158,19 +167,21 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
 
   Widget _progressRing(
     BuildContext context, {
+    required double ring,
     required int percent,
     required double progress,
     required int leftCount,
   }) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return Center(
       child: Stack(
         alignment: Alignment.center,
         children: [
           SizedBox(
-            width: 180,
-            height: 180,
+            width: ring,
+            height: ring,
             child: TweenAnimationBuilder<double>(
               duration: const Duration(milliseconds: 450),
               curve: Curves.easeOutCubic,
@@ -200,7 +211,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: r.sp(4)),
               Text(
                 leftCount == 0 ? t.allDone : t.done,
                 style: TextStyle(
@@ -338,6 +349,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
 
   Widget _todayEmptyCard(BuildContext context, {VoidCallback? onAdd}) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -361,7 +373,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             ),
             child: Icon(Icons.wb_sunny_outlined, color: context.primary),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.sp(12)),
           Text(
             t.nothingScheduled,
             style: TextStyle(
@@ -370,7 +382,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
               fontSize: 16,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: r.sp(6)),
           Text(
             t.addTaskStartDay,
             style: TextStyle(
@@ -378,7 +390,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: r.sp(12)),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(

@@ -114,5 +114,12 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+
+  "editName": "Edit Name",
+  "yourName": "Your name",
+  "changePhoto": "Change Photo",
+  "removePhoto": "Remove Photo",
+  "save": "Save"
+
 }
