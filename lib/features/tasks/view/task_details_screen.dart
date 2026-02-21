@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
@@ -12,6 +11,7 @@ import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
 
 // ✅ localization import (your project path)
 import 'package:todo_list/l10n/app_localizations.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   TaskModel task;
@@ -91,10 +91,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: context.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: AppColors.border),
+            side: BorderSide(color: context.border),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
@@ -103,8 +103,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               children: [
                 Text(
                   t.deleteTaskTitle,
-                  style: const TextStyle(
-                    color: AppColors.text,
+                  style: TextStyle(
+                    color: context.text,
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
                   ),
@@ -112,8 +112,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 const SizedBox(height: 8),
                 Text(
                   t.deleteTaskCannotUndo,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: context.textMuted,
                     fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
@@ -126,8 +126,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         onPressed: () => Navigator.pop(ctx, false),
                         child: Text(
                           t.cancel,
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
+                          style: TextStyle(
+                            color: context.textMuted,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -137,8 +137,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.danger,
-                          foregroundColor: Colors.white,
+                          backgroundColor: context.danger,
+                          foregroundColor: context.text,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -248,12 +248,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     final t = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       appBar: AppBar(
         title: Text(t.taskDetailsTitle),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.redAccent),
+            icon: Icon(Icons.delete, color: context.danger),
             onPressed: _confirmDelete,
             tooltip: t.delete,
           ),
@@ -262,8 +262,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _hasChanges ? _save : null,
         backgroundColor: _hasChanges
-            ? AppColors.primary
-            : AppColors.primary.withAlpha((0.35 * 255).toInt()),
+            ? context.primary
+            : context.primary.withAlpha((0.35 * 255).toInt()),
         child: const Icon(Icons.check),
       ),
       body: ListView(
@@ -288,8 +288,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
     return TextField(
       controller: _titleController,
-      style: const TextStyle(
-        color: Colors.white,
+      style: TextStyle(
+        color: context.text,
         fontSize: 18,
         fontWeight: FontWeight.w800,
       ),
@@ -308,7 +308,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     return TextField(
       controller: _descController,
       maxLines: 4,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: context.text),
       decoration: InputDecoration(
         labelText: t.descriptionLabel,
         hintText: t.descriptionHint,
@@ -325,8 +325,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       children: [
         Text(
           t.priorityLabel,
-          style: const TextStyle(
-            color: AppColors.textMuted,
+          style: TextStyle(
+            color: context.textMuted,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -369,8 +369,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       children: [
         Text(
           t.due,
-          style: const TextStyle(
-            color: AppColors.textMuted,
+          style: TextStyle(
+            color: context.textMuted,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -378,25 +378,21 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.border),
           ),
           child: Row(
             children: [
-              const Icon(
-                Icons.calendar_today,
-                size: 18,
-                color: AppColors.textMuted,
-              ),
+              Icon(Icons.calendar_today, size: 18, color: context.textMuted),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   _dueDateTime == null
                       ? t.noDueDate
                       : _formatDue(context, _dueDateTime!),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.text,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -419,8 +415,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       children: [
         Text(
           t.tagsLabel,
-          style: const TextStyle(
-            color: AppColors.textMuted,
+          style: TextStyle(
+            color: context.textMuted,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -441,7 +437,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         ),
         const SizedBox(height: 10),
         if (_tags.isEmpty)
-          Text(t.noTags, style: const TextStyle(color: AppColors.textMuted))
+          Text(t.noTags, style: TextStyle(color: context.textMuted))
         else
           Wrap(
             spacing: 8,
@@ -465,11 +461,11 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   Color _priorityColor(TaskPriority p) {
     switch (p) {
       case TaskPriority.high:
-        return AppColors.danger;
+        return context.danger;
       case TaskPriority.medium:
-        return AppColors.warning;
+        return context.warning;
       case TaskPriority.low:
-        return AppColors.success;
+        return context.success;
     }
   }
 

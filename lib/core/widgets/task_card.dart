@@ -1,19 +1,15 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'package:todo_list/core/sfx/sfx.dart';
-import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/view/task_details_screen.dart';
 import 'package:todo_list/features/tasks/widgets/animated_check.dart';
-
-// ✅ Your generated localization import (as you confirmed)
 import 'package:todo_list/l10n/app_localizations.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
 
 class TaskCard extends StatelessWidget {
   final TaskModel task;
@@ -28,17 +24,6 @@ class TaskCard extends StatelessWidget {
   });
 
   bool get isDone => task.status == TaskStatus.done.index;
-
-  Color get priorityColor {
-    final p = TaskPriority.values[task.priority];
-    Color c = switch (p) {
-      TaskPriority.high => AppColors.danger,
-      TaskPriority.medium => AppColors.warning,
-      TaskPriority.low => AppColors.success,
-    };
-    if (isDone) return c.withAlpha((0.35 * 255).toInt());
-    return c;
-  }
 
   bool get isOverdue {
     final due = task.dueDateTime;
@@ -55,10 +40,20 @@ class TaskCard extends StatelessWidget {
     return due.isAfter(now) && due.difference(now).inHours <= 24;
   }
 
-  Color get dueColor {
-    if (isOverdue) return AppColors.danger;
-    if (isDueSoon) return AppColors.warning;
-    return AppColors.textMuted;
+  Color priorityColor(BuildContext context) {
+    final p = TaskPriority.values[task.priority];
+    final c = switch (p) {
+      TaskPriority.high => context.danger,
+      TaskPriority.medium => context.warning,
+      TaskPriority.low => context.success,
+    };
+    return isDone ? c.withAlpha((0.35 * 255).toInt()) : c;
+  }
+
+  Color dueColor(BuildContext context) {
+    if (isOverdue) return context.danger;
+    if (isDueSoon) return context.warning;
+    return context.textMuted;
   }
 
   String _priorityLabel(BuildContext context) {
@@ -77,18 +72,23 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
-    debugPrint('TaskCard locale: $locale');
     final t = AppLocalizations.of(context)!;
 
     final hasTags = task.tags.isNotEmpty;
     final hasDue = task.dueDateTime != null;
 
+    final pColor = priorityColor(context);
+    final dColor = dueColor(context);
+
+    final cardBg = isDone
+        ? context.surface
+        : context.surface; // responsive + theme-safe
+
     return Dismissible(
       key: ValueKey('task-${task.id}'),
       direction: DismissDirection.endToStart,
       background: const SizedBox.shrink(),
-      secondaryBackground: _swipeDeleteBg(),
+      secondaryBackground: _swipeDeleteBg(context),
       confirmDismiss: (_) => _confirmDelete(context),
       onDismissed: (_) => onDelete(),
       child: AnimatedContainer(
@@ -96,10 +96,10 @@ class TaskCard extends StatelessWidget {
         curve: Curves.easeOut,
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isDone ? AppColors.surface : const Color(0xFF1E293B),
+          color: cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDone ? AppColors.border : Colors.transparent,
+            color: isDone ? context.border : Colors.transparent,
           ),
         ),
         child: Material(
@@ -107,7 +107,7 @@ class TaskCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: Ink(
             decoration: BoxDecoration(
-              color: isDone ? AppColors.surface : const Color(0xFF1E293B),
+              color: cardBg,
               borderRadius: BorderRadius.circular(16),
             ),
             child: InkWell(
@@ -126,7 +126,7 @@ class TaskCard extends StatelessWidget {
                   Container(
                     width: 5,
                     decoration: BoxDecoration(
-                      color: priorityColor,
+                      color: pColor,
                       borderRadius: const BorderRadius.horizontal(
                         left: Radius.circular(16),
                       ),
@@ -145,7 +145,7 @@ class TaskCard extends StatelessWidget {
                                 scale: 0.92,
                                 child: AnimatedCheck(
                                   checked: isDone,
-                                  color: priorityColor,
+                                  color: pColor,
                                   onTap: () async {
                                     HapticFeedback.selectionClick();
                                     final wasDone = isDone;
@@ -161,14 +161,14 @@ class TaskCard extends StatelessWidget {
                                   curve: Curves.easeOut,
                                   style: TextStyle(
                                     color: isDone
-                                        ? AppColors.textMuted
-                                        : AppColors.text,
+                                        ? context.textMuted
+                                        : context.text,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                     decoration: isDone
                                         ? TextDecoration.lineThrough
                                         : TextDecoration.none,
-                                    decorationColor: AppColors.textMuted,
+                                    decorationColor: context.textMuted,
                                   ),
                                   child: Text(
                                     task.title,
@@ -178,28 +178,24 @@ class TaskCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 10),
-
-                              // ✅ pass context here
-                              _priorityBadgeCompact(context),
+                              _priorityBadgeCompact(context, pColor),
                             ],
                           ),
 
-                          const SizedBox(height: 8),
-
                           if (hasDue) ...[
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 12),
                             Row(
                               children: [
                                 Icon(
                                   Icons.access_time,
                                   size: 14,
-                                  color: dueColor,
+                                  color: dColor,
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
                                   _formatDue(context, task.dueDateTime!),
                                   style: TextStyle(
-                                    color: dueColor,
+                                    color: dColor,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -208,8 +204,8 @@ class TaskCard extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Text(
                                     t.overdue,
-                                    style: const TextStyle(
-                                      color: AppColors.danger,
+                                    style: TextStyle(
+                                      color: context.danger,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 0.4,
@@ -221,7 +217,7 @@ class TaskCard extends StatelessWidget {
                           ],
 
                           if (hasTags) ...[
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             Wrap(
                               spacing: 6,
                               runSpacing: 6,
@@ -254,8 +250,8 @@ class TaskCard extends StatelessWidget {
                               const SizedBox(height: 6),
                               Text(
                                 t.moreCount(task.tags.length - 3),
-                                style: const TextStyle(
-                                  color: AppColors.textMuted,
+                                style: TextStyle(
+                                  color: context.textMuted,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -275,16 +271,16 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  Widget _swipeDeleteBg() {
+  Widget _swipeDeleteBg(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.only(right: 18),
       alignment: Alignment.centerRight,
       decoration: BoxDecoration(
-        color: AppColors.danger.withAlpha((0.22 * 255).toInt()),
+        color: context.danger.withAlpha((0.22 * 255).toInt()),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Icon(Icons.delete, color: AppColors.danger, size: 22),
+      child: Icon(Icons.delete, color: context.danger, size: 22),
     );
   }
 
@@ -294,7 +290,7 @@ class TaskCard extends StatelessWidget {
     return (await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
-            backgroundColor: AppColors.surface,
+            backgroundColor: context.surface,
             title: Text(t.deleteTaskTitle),
             content: Text(t.deleteTaskBody(task.title)),
             actions: [
@@ -306,8 +302,8 @@ class TaskCard extends StatelessWidget {
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(
                   t.delete,
-                  style: const TextStyle(
-                    color: AppColors.danger,
+                  style: TextStyle(
+                    color: context.danger,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -318,20 +314,18 @@ class TaskCard extends StatelessWidget {
         false;
   }
 
-  Widget _priorityBadgeCompact(BuildContext context) {
+  Widget _priorityBadgeCompact(BuildContext context, Color pColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: priorityColor.withAlpha((0.18 * 255).toInt()),
+        color: pColor.withAlpha((0.18 * 255).toInt()),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: priorityColor.withAlpha((0.45 * 255).toInt()),
-        ),
+        border: Border.all(color: pColor.withAlpha((0.45 * 255).toInt())),
       ),
       child: Text(
         _priorityLabel(context),
         style: TextStyle(
-          color: priorityColor,
+          color: pColor,
           fontWeight: FontWeight.w800,
           fontSize: 10.5,
           letterSpacing: 0.4,

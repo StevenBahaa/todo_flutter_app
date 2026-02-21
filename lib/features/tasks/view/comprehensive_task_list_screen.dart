@@ -12,6 +12,7 @@ import 'package:todo_list/features/tasks/sheets/quick_add_sheet.dart';
 
 // ✅ localization import (your project path)
 import 'package:todo_list/l10n/app_localizations.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
 
 class ComprehensiveTaskListScreen extends StatefulWidget {
   const ComprehensiveTaskListScreen({super.key});
@@ -52,7 +53,7 @@ class _ComprehensiveTaskListScreenState
     final t = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       appBar: AppBar(
         title: Text(t.allTasksTitle),
         actions: [
@@ -205,38 +206,35 @@ class _ComprehensiveTaskListScreenState
     final hasDone = doneTasks.isNotEmpty;
 
     final countChipBg = hasDone
-        ? AppColors.primary.withAlpha((0.14 * 255).toInt())
-        : AppColors.textMuted.withAlpha((0.10 * 255).toInt());
+        ? context.primary.withAlpha((0.14 * 255).toInt())
+        : context.textMuted.withAlpha((0.10 * 255).toInt());
 
     final countChipBorder = hasDone
-        ? AppColors.primary.withAlpha((0.35 * 255).toInt())
-        : AppColors.border;
+        ? context.primary.withAlpha((0.35 * 255).toInt())
+        : context.border;
 
-    final countChipText = hasDone ? AppColors.primary : AppColors.textMuted;
+    final countChipText = hasDone ? context.primary : context.textMuted;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.border),
       ),
       child: Row(
         children: [
           Icon(
             Icons.check_circle,
-            color: hasDone ? AppColors.success : AppColors.textMuted,
+            color: hasDone ? context.success : context.textMuted,
             size: 18,
           ),
           const SizedBox(width: 10),
 
           Text(
             t.completedLabel,
-            style: const TextStyle(
-              color: AppColors.text,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(color: context.text, fontWeight: FontWeight.w800),
           ),
 
           const SizedBox(width: 10),
@@ -273,16 +271,14 @@ class _ComprehensiveTaskListScreenState
             icon: const Icon(Icons.visibility, size: 16),
             label: Text(t.view),
             style: TextButton.styleFrom(
-              foregroundColor: hasDone
-                  ? AppColors.primary
-                  : AppColors.textMuted,
+              foregroundColor: hasDone ? context.primary : context.textMuted,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
                   color: hasDone
-                      ? AppColors.primary.withAlpha((0.35 * 255).toInt())
-                      : AppColors.border,
+                      ? context.primary.withAlpha((0.35 * 255).toInt())
+                      : context.border,
                 ),
               ),
             ),
@@ -299,7 +295,7 @@ class _ComprehensiveTaskListScreenState
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -315,7 +311,7 @@ class _ComprehensiveTaskListScreenState
                     width: 44,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: AppColors.border,
+                      color: context.border,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -327,8 +323,8 @@ class _ComprehensiveTaskListScreenState
                       children: [
                         Text(
                           t.completedTodayTitle,
-                          style: const TextStyle(
-                            color: AppColors.text,
+                          style: TextStyle(
+                            color: context.text,
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
                           ),
@@ -336,7 +332,7 @@ class _ComprehensiveTaskListScreenState
                         const Spacer(),
                         Text(
                           "${sheetTasks.length}",
-                          style: const TextStyle(color: AppColors.textMuted),
+                          style: TextStyle(color: context.textMuted),
                         ),
                       ],
                     ),
@@ -384,8 +380,8 @@ class _ComprehensiveTaskListScreenState
       children: [
         Text(
           '$title${count > 0 ? " ($count)" : ""}',
-          style: const TextStyle(
-            color: AppColors.text,
+          style: TextStyle(
+            color: context.text,
             fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
@@ -419,9 +415,9 @@ class _ComprehensiveTaskListScreenState
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.danger,
+                    color: context.danger,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 1.5),
+                    border: Border.all(color: context.surface, width: 1.5),
                   ),
                 ),
               ],
@@ -491,9 +487,9 @@ class _ComprehensiveTaskListScreenState
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,19 +498,19 @@ class _ComprehensiveTaskListScreenState
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha((0.18 * 255).toInt()),
+              color: context.primary.withAlpha((0.18 * 255).toInt()),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.primary.withAlpha((0.35 * 255).toInt()),
+                color: context.primary.withAlpha((0.35 * 255).toInt()),
               ),
             ),
-            child: const Icon(Icons.inbox_outlined, color: AppColors.primary),
+            child: Icon(Icons.inbox_outlined, color: context.primary),
           ),
           const SizedBox(height: 12),
           Text(
             text,
-            style: const TextStyle(
-              color: AppColors.textMuted,
+            style: TextStyle(
+              color: context.textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -534,8 +530,8 @@ class _ComprehensiveTaskListScreenState
   Widget _sectionLabel(String title) {
     return Text(
       title,
-      style: const TextStyle(
-        color: AppColors.textMuted,
+      style: TextStyle(
+        color: context.textMuted,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.2,
         fontSize: 12,
@@ -551,16 +547,16 @@ class _ComprehensiveTaskListScreenState
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.danger.withAlpha((0.20 * 255).toInt()),
+            color: context.danger.withAlpha((0.20 * 255).toInt()),
             borderRadius: BorderRadius.circular(99),
             border: Border.all(
-              color: AppColors.danger.withAlpha((0.55 * 255).toInt()),
+              color: context.danger.withAlpha((0.55 * 255).toInt()),
             ),
           ),
           child: Text(
             "$count",
-            style: const TextStyle(
-              color: AppColors.danger,
+            style: TextStyle(
+              color: context.danger,
               fontWeight: FontWeight.w800,
               fontSize: 12,
             ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:todo_list/core/theme/app_colors.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
@@ -10,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 // ✅ your generated localizations path
 import 'package:todo_list/l10n/app_localizations.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
 
 class QuickAddSheet extends StatefulWidget {
   const QuickAddSheet({super.key});
@@ -139,7 +139,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: context.text,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
@@ -150,8 +150,8 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               children: [
                 Text(
                   t.quickAddTaskTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.text,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -171,12 +171,12 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
           TextField(
             controller: _titleController,
             autofocus: true,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: context.text),
             decoration: InputDecoration(
               hintText: t.taskTitleHint,
-              hintStyle: const TextStyle(color: Colors.white54),
+              hintStyle: TextStyle(color: context.text),
               filled: true,
-              fillColor: const Color(0xFF1E2935),
+              fillColor: context.scheme.surfaceContainerHighest,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
@@ -227,7 +227,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               Expanded(
                 child: TextField(
                   controller: _tagController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: context.text),
                   decoration: InputDecoration(hintText: t.addTagsHint),
                   onSubmitted: (_) => _addTag(),
                 ),
@@ -286,10 +286,10 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.primary.withAlpha((0.18 * 255).toInt()),
+          color: context.primary.withAlpha((0.18 * 255).toInt()),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.primary.withAlpha((0.45 * 255).toInt()),
+            color: context.primary.withAlpha((0.45 * 255).toInt()),
             width: 1.2,
           ),
         ),
@@ -301,11 +301,11 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
   Color _pColor(TaskPriority p) {
     switch (p) {
       case TaskPriority.high:
-        return AppColors.danger;
+        return context.danger;
       case TaskPriority.medium:
-        return AppColors.warning;
+        return context.warning;
       case TaskPriority.low:
-        return AppColors.success;
+        return context.success;
     }
   }
 

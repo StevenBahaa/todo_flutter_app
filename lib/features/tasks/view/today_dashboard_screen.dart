@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 
-import 'package:todo_list/core/theme/app_colors.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
 import 'package:todo_list/core/widgets/task_card.dart';
 import 'package:todo_list/data/local/hive_boxes.dart';
 import 'package:todo_list/data/models/task_enums.dart';
@@ -71,9 +71,9 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
     final t = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.primary,
         child: const Icon(Icons.add),
         onPressed: () => _openQuickAdd(context),
       ),
@@ -207,9 +207,9 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                               return CircularProgressIndicator(
                                 value: value,
                                 strokeWidth: 12,
-                                backgroundColor: AppColors.border,
-                                valueColor: const AlwaysStoppedAnimation(
-                                  AppColors.primary,
+                                backgroundColor: context.border,
+                                valueColor: AlwaysStoppedAnimation(
+                                  context.primary,
                                 ),
                                 strokeCap: StrokeCap.round,
                               );
@@ -221,8 +221,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                           children: [
                             Text(
                               "$percent%",
-                              style: const TextStyle(
-                                color: AppColors.text,
+                              style: TextStyle(
+                                color: context.text,
                                 fontSize: 30,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -230,8 +230,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                             const SizedBox(height: 4),
                             Text(
                               leftCount == 0 ? t.allDone : t.done,
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
+                              style: TextStyle(
+                                color: context.textMuted,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.2,
                               ),
@@ -246,8 +246,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                     leftCount == 0
                         ? t.allTasksDoneToday
                         : t.tasksLeft(leftCount),
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      color: context.textMuted,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
@@ -324,8 +324,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: AppColors.text,
+          style: TextStyle(
+            color: context.text,
             fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
@@ -334,10 +334,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
         if (onSeeAll != null)
           TextButton(
             onPressed: onSeeAll,
-            child: Text(
-              t.seeAll,
-              style: const TextStyle(color: AppColors.primary),
-            ),
+            child: Text(t.seeAll, style: TextStyle(color: context.primary)),
           ),
       ],
     );
@@ -373,22 +370,22 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.border),
         ),
         child: ExpansionTile(
           initiallyExpanded: initiallyExpanded,
-          collapsedIconColor: AppColors.textMuted,
-          iconColor: AppColors.textMuted,
+          collapsedIconColor: context.textMuted,
+          iconColor: context.textMuted,
           tilePadding: const EdgeInsets.symmetric(horizontal: 12),
           childrenPadding: const EdgeInsets.only(bottom: 8),
           title: Row(
             children: [
               Text(
                 t.todayCompleted,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: context.textMuted,
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
                 ),
@@ -400,16 +397,16 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha((0.14 * 255).toInt()),
+                  color: context.primary.withAlpha((0.14 * 255).toInt()),
                   borderRadius: BorderRadius.circular(99),
                   border: Border.all(
-                    color: AppColors.primary.withAlpha((0.35 * 255).toInt()),
+                    color: context.primary.withAlpha((0.35 * 255).toInt()),
                   ),
                 ),
                 child: Text(
                   "${done.length}",
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.primary,
                     fontWeight: FontWeight.w800,
                     fontSize: 12,
                   ),
@@ -442,9 +439,9 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,22 +450,19 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha((0.16 * 255).toInt()),
+              color: context.primary.withAlpha((0.16 * 255).toInt()),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: AppColors.primary.withAlpha((0.35 * 255).toInt()),
+                color: context.primary.withAlpha((0.35 * 255).toInt()),
               ),
             ),
-            child: const Icon(
-              Icons.wb_sunny_outlined,
-              color: AppColors.primary,
-            ),
+            child: Icon(Icons.wb_sunny_outlined, color: context.primary),
           ),
           const SizedBox(height: 12),
           Text(
             t.nothingScheduled,
-            style: const TextStyle(
-              color: AppColors.text,
+            style: TextStyle(
+              color: context.text,
               fontWeight: FontWeight.w800,
               fontSize: 16,
             ),
@@ -476,8 +470,8 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
           const SizedBox(height: 6),
           Text(
             t.addTaskStartDay,
-            style: const TextStyle(
-              color: AppColors.textMuted,
+            style: TextStyle(
+              color: context.textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -535,8 +529,8 @@ class _ValueListenableHeader extends StatelessWidget {
                 children: [
                   Text(
                     t.welcomeBack,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      color: context.textMuted,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                       letterSpacing: 0.4,
@@ -547,8 +541,8 @@ class _ValueListenableHeader extends StatelessWidget {
                     name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.text,
+                    style: TextStyle(
+                      color: context.text,
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
                     ),
@@ -556,16 +550,16 @@ class _ValueListenableHeader extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today_rounded,
                         size: 14,
-                        color: AppColors.textMuted,
+                        color: context.textMuted,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         dateText,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
+                        style: TextStyle(
+                          color: context.textMuted,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -580,10 +574,7 @@ class _ValueListenableHeader extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
-              icon: const Icon(
-                Icons.settings_rounded,
-                color: AppColors.textMuted,
-              ),
+              icon: Icon(Icons.settings_rounded, color: context.textMuted),
             ),
           ],
         );
@@ -603,14 +594,14 @@ class _Avatar extends StatelessWidget {
       height: 46,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: context.border, width: 1),
       ),
       child: ClipOval(
         child: photoFile != null
             ? Image.file(photoFile!, fit: BoxFit.cover)
             : Container(
-                color: AppColors.surface,
-                child: const Icon(Icons.person, color: AppColors.textMuted),
+                color: context.surface,
+                child: Icon(Icons.person, color: context.textMuted),
               ),
       ),
     );

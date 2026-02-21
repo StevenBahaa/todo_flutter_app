@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -13,7 +13,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.bg,
       appBar: AppBar(title: const Text("Settings")),
       body: BlocBuilder<SettingsCubit, SettingsState>(
         builder: (context, s) {
@@ -28,7 +28,7 @@ class SettingsScreen extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 42,
-                          backgroundColor: AppColors.surface2,
+                          backgroundColor: context.surface,
                           backgroundImage: s.userPhotoPath != null
                               ? FileImage(File(s.userPhotoPath!))
                               : null,
@@ -43,8 +43,8 @@ class SettingsScreen extends StatelessWidget {
                             onTap: () => _pickImage(context),
                             child: Container(
                               padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
+                              decoration: BoxDecoration(
+                                color: context.primary,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.edit, size: 16),
@@ -59,10 +59,10 @@ class SettingsScreen extends StatelessWidget {
                       onTap: () => _editName(context, s.userName),
                       child: Text(
                         s.userName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                          color: context.text,
                         ),
                       ),
                     ),
@@ -81,16 +81,17 @@ class SettingsScreen extends StatelessWidget {
 
               // ================= PREFERENCES CARD =================
               _card(
+                context,
                 children: [
                   // THEME
                   Row(
                     children: [
-                      const Icon(Icons.dark_mode, color: AppColors.primary),
+                      Icon(Icons.dark_mode, color: context.primary),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           "Theme",
-                          style: TextStyle(color: AppColors.text),
+                          style: TextStyle(color: context.text),
                         ),
                       ),
                       _themeSelector(context, s.themeMode),
@@ -102,17 +103,14 @@ class SettingsScreen extends StatelessWidget {
                   // LANGUAGE
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
-                      Icons.language,
-                      color: AppColors.primary,
-                    ),
-                    title: const Text(
+                    leading: Icon(Icons.language, color: context.primary),
+                    title: Text(
                       "Language",
-                      style: TextStyle(color: AppColors.text),
+                      style: TextStyle(color: context.text),
                     ),
                     trailing: Text(
                       s.langCode == 'ar' ? "العربية" : "English",
-                      style: const TextStyle(color: AppColors.textMuted),
+                      style: TextStyle(color: context.textMuted),
                     ),
                     onTap: () => _languageSheet(context),
                   ),
@@ -127,13 +125,13 @@ class SettingsScreen extends StatelessWidget {
 
   // ================= UI HELPERS =================
 
-  Widget _card({required List<Widget> children}) {
+  Widget _card(BuildContext context, {required List<Widget> children}) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.border),
       ),
       child: Column(children: children),
     );
@@ -143,8 +141,8 @@ class SettingsScreen extends StatelessWidget {
   Widget _themeSelector(BuildContext context, ThemeMode mode) {
     return SegmentedButton<ThemeMode>(
       showSelectedIcon: false,
-      style: const ButtonStyle(
-        backgroundColor: WidgetStatePropertyAll(AppColors.surface2),
+      style: ButtonStyle(
+        backgroundColor: WidgetStatePropertyAll(context.surface),
       ),
       segments: const [
         ButtonSegment(value: ThemeMode.light, label: Text("Light")),
@@ -172,7 +170,7 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.surface,
         title: const Text("Edit Name"),
         content: TextField(controller: controller),
         actions: [
@@ -194,7 +192,7 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (_) {
         return Container(
-          color: AppColors.surface,
+          color: context.surface,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
