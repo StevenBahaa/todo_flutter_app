@@ -250,4 +250,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get tags => 'الوسوم';
+
+  @override
+  String get tomorrow => 'بكرة';
 }

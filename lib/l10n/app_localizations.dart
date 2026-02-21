@@ -544,6 +544,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tags'**
   String get tags;
+
+  /// No description provided for @tomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get tomorrow;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

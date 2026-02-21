@@ -247,4 +247,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tags => 'Tags';
+
+  @override
+  String get tomorrow => 'Tomorrow';
 }

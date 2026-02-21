@@ -4,12 +4,12 @@ import 'package:intl/intl.dart';
 
 import 'package:todo_list/core/sfx/sfx.dart';
 import 'package:todo_list/core/theme/tag_colors.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/view/task_details_screen.dart';
 import 'package:todo_list/features/tasks/widgets/animated_check.dart';
 import 'package:todo_list/l10n/app_localizations.dart';
-import 'package:todo_list/core/theme/theme_x.dart';
 
 class TaskCard extends StatelessWidget {
   final TaskModel task;
@@ -58,16 +58,11 @@ class TaskCard extends StatelessWidget {
 
   String _priorityLabel(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    final p = TaskPriority.values[task.priority];
-
-    switch (p) {
-      case TaskPriority.low:
-        return t.priorityLow;
-      case TaskPriority.medium:
-        return t.priorityMedium;
-      case TaskPriority.high:
-        return t.priorityHigh;
-    }
+    return switch (TaskPriority.values[task.priority]) {
+      TaskPriority.low => t.priorityLow,
+      TaskPriority.medium => t.priorityMedium,
+      TaskPriority.high => t.priorityHigh,
+    };
   }
 
   @override
@@ -80,9 +75,12 @@ class TaskCard extends StatelessWidget {
     final pColor = priorityColor(context);
     final dColor = dueColor(context);
 
-    final cardBg = isDone
-        ? context.surface
-        : context.surface; // responsive + theme-safe
+    // ✅ فرق واضح بين done / not-done + theme-safe
+    final cardBg = isDone ? context.surface : context.scheme.surfaceContainerHighest;
+
+    final borderColor = isDone
+        ? context.border
+        : context.border.withAlpha((0.45 * 255).toInt());
 
     return Dismissible(
       key: ValueKey('task-${task.id}'),
@@ -98,9 +96,7 @@ class TaskCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDone ? context.border : Colors.transparent,
-          ),
+          border: Border.all(color: borderColor),
         ),
         child: Material(
           color: Colors.transparent,
@@ -134,7 +130,7 @@ class TaskCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(15, 20, 15, 20),
+                      padding: const EdgeInsets.fromLTRB(15, 16, 15, 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -160,9 +156,7 @@ class TaskCard extends StatelessWidget {
                                   duration: const Duration(milliseconds: 350),
                                   curve: Curves.easeOut,
                                   style: TextStyle(
-                                    color: isDone
-                                        ? context.textMuted
-                                        : context.text,
+                                    color: isDone ? context.textMuted : context.text,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                     decoration: isDone
@@ -183,36 +177,48 @@ class TaskCard extends StatelessWidget {
                           ),
 
                           if (hasDue) ...[
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time,
-                                  size: 14,
-                                  color: dColor,
+                            const SizedBox(height: 10),
+
+                            // ✅ nicer due row
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: dColor.withAlpha((0.10 * 255).toInt()),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: dColor.withAlpha((0.25 * 255).toInt()),
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _formatDue(context, task.dueDateTime!),
-                                  style: TextStyle(
-                                    color: dColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (isOverdue) ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    t.overdue,
-                                    style: TextStyle(
-                                      color: context.danger,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.4,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.access_time, size: 14, color: dColor),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      _formatDuePretty(context, task.dueDateTime!),
+                                      style: TextStyle(
+                                        color: dColor,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
+                                  if (isOverdue) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      t.overdue,
+                                      style: TextStyle(
+                                        color: context.danger,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ],
 
@@ -224,10 +230,7 @@ class TaskCard extends StatelessWidget {
                               children: task.tags.take(3).map((tag) {
                                 final c = TagColors.resolve(tag);
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: c.withAlpha((0.16 * 255).toInt()),
                                     borderRadius: BorderRadius.circular(10),
@@ -334,10 +337,25 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  String _formatDue(BuildContext context, DateTime dt) {
+  // ✅ prettier, localized-ish formatting
+  String _formatDuePretty(BuildContext context, DateTime dt) {
+    final t = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).languageCode;
-    final date = DateFormat('d/M', locale).format(dt);
-    final time = DateFormat('HH:mm', locale).format(dt);
-    return '$date  $time';
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final day = DateTime(dt.year, dt.month, dt.day);
+
+    final time = DateFormat.jm(locale).format(dt); // 8:30 PM / ٨:٣٠ م
+    if (day == today) return "${t.todayTitle} • $time";
+    if (day == tomorrow) return "${t.tomorrow} • $time";
+
+    final sameYear = dt.year == now.year;
+    final date = sameYear
+        ? DateFormat('EEE, d MMM', locale).format(dt)
+        : DateFormat('EEE, d MMM y', locale).format(dt);
+
+    return "$date • $time";
   }
 }
