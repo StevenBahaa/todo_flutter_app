@@ -247,4 +247,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get save => 'حفظ';
+
+  @override
+  String get tags => 'الوسوم';
 }

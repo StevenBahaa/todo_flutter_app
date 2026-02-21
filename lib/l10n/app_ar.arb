@@ -120,6 +120,7 @@
   "yourName": "اسمك",
   "changePhoto": "تغيير الصورة",
   "removePhoto": "حذف الصورة",
-  "save": "حفظ"
+  "save": "حفظ",
+"tags": "الوسوم"
 
 }

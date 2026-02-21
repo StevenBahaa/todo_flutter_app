@@ -120,6 +120,7 @@
   "yourName": "Your name",
   "changePhoto": "Change Photo",
   "removePhoto": "Remove Photo",
-  "save": "Save"
+  "save": "Save",
+"tags": "Tags"
 
 }
