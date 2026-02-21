@@ -76,7 +76,9 @@ class TaskCard extends StatelessWidget {
     final dColor = dueColor(context);
 
     // ✅ فرق واضح بين done / not-done + theme-safe
-    final cardBg = isDone ? context.surface : context.scheme.surfaceContainerHighest;
+    final cardBg = isDone
+        ? context.surface
+        : context.scheme.surfaceContainerHighest;
 
     final borderColor = isDone
         ? context.border
@@ -156,7 +158,9 @@ class TaskCard extends StatelessWidget {
                                   duration: const Duration(milliseconds: 350),
                                   curve: Curves.easeOut,
                                   style: TextStyle(
-                                    color: isDone ? context.textMuted : context.text,
+                                    color: isDone
+                                        ? context.textMuted
+                                        : context.text,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                     decoration: isDone
@@ -181,7 +185,10 @@ class TaskCard extends StatelessWidget {
 
                             // ✅ nicer due row
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: dColor.withAlpha((0.10 * 255).toInt()),
                                 borderRadius: BorderRadius.circular(12),
@@ -191,11 +198,18 @@ class TaskCard extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.access_time, size: 14, color: dColor),
+                                  Icon(
+                                    Icons.access_time,
+                                    size: 14,
+                                    color: dColor,
+                                  ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
-                                      _formatDuePretty(context, task.dueDateTime!),
+                                      _formatDuePretty(
+                                        context,
+                                        task.dueDateTime!,
+                                      ),
                                       style: TextStyle(
                                         color: dColor,
                                         fontSize: 12.5,
@@ -230,7 +244,10 @@ class TaskCard extends StatelessWidget {
                               children: task.tags.take(3).map((tag) {
                                 final c = TagColors.resolve(tag);
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: c.withAlpha((0.16 * 255).toInt()),
                                     borderRadius: BorderRadius.circular(10),

@@ -43,6 +43,10 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
       builder: (_) => const QuickAddSheet(),
     );
   }
