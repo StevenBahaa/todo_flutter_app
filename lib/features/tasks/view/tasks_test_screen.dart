@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:todo_list/core/widgets/task_card.dart';
+import 'package:todo_list/features/tasks/widgets/task_card.dart';
 import 'package:todo_list/data/models/task_enums.dart' as e;
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';

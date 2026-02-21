@@ -7,7 +7,7 @@ import 'package:todo_list/data/local/user_profile_prefs.dart';
 import 'package:todo_list/data/repositories/tasks_repository.dart';
 import 'package:todo_list/features/onboarding/view/onboarding_screen.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
-import 'package:todo_list/features/tasks/view/today_dashboard_screen.dart';
+import 'package:todo_list/features/today/view/today_dashboard_screen.dart';
 
 // ✅ Settings
 import 'package:todo_list/features/settings/cubit/settings_cubit.dart';
