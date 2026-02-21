@@ -5,17 +5,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import 'package:todo_list/core/theme/tag_colors.dart';
+import 'package:todo_list/core/theme/theme_x.dart';
+import 'package:todo_list/core/utils/responsive.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
-
-// ✅ localization import (your project path)
 import 'package:todo_list/l10n/app_localizations.dart';
-import 'package:todo_list/core/theme/theme_x.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
-  TaskModel task;
-  TaskDetailsScreen({super.key, required this.task});
+  final TaskModel task;
+  const TaskDetailsScreen({super.key, required this.task});
 
   @override
   State<TaskDetailsScreen> createState() => _TaskDetailsScreenState();
@@ -64,9 +63,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     return true;
   }
 
-  // -------------------------------------
-  // Actions
-  // -------------------------------------
+  // ---------------- Actions ----------------
 
   void _save() {
     final title = _titleController.text.trim();
@@ -86,39 +83,45 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Future<void> _confirmDelete() async {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: context.surface,
+          backgroundColor: ctx.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: BorderSide(color: context.border),
+            borderRadius: BorderRadius.circular(r.sp(18)),
+            side: BorderSide(color: ctx.border),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+            padding: EdgeInsets.fromLTRB(
+              r.sp(18),
+              r.sp(18),
+              r.sp(18),
+              r.sp(14),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   t.deleteTaskTitle,
                   style: TextStyle(
-                    color: context.text,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
+                    color: ctx.text,
+                    fontWeight: FontWeight.w900,
+                    fontSize: r.fs(18),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: r.sp(8)),
                 Text(
                   t.deleteTaskCannotUndo,
                   style: TextStyle(
-                    color: context.textMuted,
+                    color: ctx.textMuted,
                     fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: r.sp(18)),
                 Row(
                   children: [
                     Expanded(
@@ -127,20 +130,20 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         child: Text(
                           t.cancel,
                           style: TextStyle(
-                            color: context.textMuted,
+                            color: ctx.textMuted,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: r.sp(10)),
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: context.danger,
-                          foregroundColor: context.text,
+                          backgroundColor: ctx.danger,
+                          foregroundColor: ctx.scheme.onError,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(r.sp(12)),
                           ),
                           elevation: 0,
                         ),
@@ -184,21 +187,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           : TimeOfDay.fromDateTime(now),
     );
 
-    if (time == null) {
-      setState(() {
-        _dueDateTime = DateTime(date.year, date.month, date.day);
-      });
-      return;
-    }
-
     setState(() {
-      _dueDateTime = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
+      if (time == null) {
+        _dueDateTime = DateTime(date.year, date.month, date.day);
+      } else {
+        _dueDateTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        );
+      }
     });
   }
 
@@ -229,23 +229,19 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   String _priorityLabel(BuildContext context, TaskPriority p) {
     final t = AppLocalizations.of(context)!;
-    switch (p) {
-      case TaskPriority.low:
-        return t.priorityLow;
-      case TaskPriority.medium:
-        return t.priorityMedium;
-      case TaskPriority.high:
-        return t.priorityHigh;
-    }
+    return switch (p) {
+      TaskPriority.low => t.priorityLow,
+      TaskPriority.medium => t.priorityMedium,
+      TaskPriority.high => t.priorityHigh,
+    };
   }
 
-  // =========================
-  // UI
-  // =========================
+  // ---------------- UI ----------------
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return Scaffold(
       backgroundColor: context.bg,
@@ -266,36 +262,48 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             : context.primary.withAlpha((0.35 * 255).toInt()),
         child: const Icon(Icons.check),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
-        children: [
-          _titleField(context),
-          const SizedBox(height: 16),
-          _descriptionField(context),
-          const SizedBox(height: 18),
-          _prioritySection(context),
-          const SizedBox(height: 18),
-          _dueSection(context),
-          const SizedBox(height: 18),
-          _tagsSection(context),
-        ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(
+              r.sp(16),
+              r.sp(12),
+              r.sp(16),
+              r.sp(110),
+            ),
+            children: [
+              _titleField(context),
+              SizedBox(height: r.sp(16)),
+              _descriptionField(context),
+              SizedBox(height: r.sp(18)),
+              _prioritySection(context),
+              SizedBox(height: r.sp(18)),
+              _dueSection(context),
+              SizedBox(height: r.sp(18)),
+              _tagsSection(context),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _titleField(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return TextField(
       controller: _titleController,
       style: TextStyle(
         color: context.text,
-        fontSize: 18,
+        fontSize: r.fs(18),
         fontWeight: FontWeight.w800,
       ),
       decoration: InputDecoration(
         labelText: t.titleLabel,
         hintText: t.taskTitleHint,
+        hintStyle: TextStyle(color: context.textMuted),
       ),
       textInputAction: TextInputAction.next,
       onChanged: (_) => setState(() {}),
@@ -312,6 +320,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       decoration: InputDecoration(
         labelText: t.descriptionLabel,
         hintText: t.descriptionHint,
+        hintStyle: TextStyle(color: context.textMuted),
       ),
       onChanged: (_) => setState(() {}),
     );
@@ -319,6 +328,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Widget _prioritySection(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,10 +340,10 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: r.sp(10)),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: r.sp(10),
+          runSpacing: r.sp(10),
           children: TaskPriority.values.map((p) {
             final selected = _priority == p;
             final c = _priorityColor(p);
@@ -345,7 +355,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
               labelStyle: TextStyle(
                 color: selected ? c : c.withAlpha((0.90 * 255).toInt()),
                 fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
-                fontSize: 12,
+                fontSize: r.fs(12),
               ),
               selectedColor: c.withAlpha((0.25 * 255).toInt()),
               backgroundColor: c.withAlpha((0.12 * 255).toInt()),
@@ -363,6 +373,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Widget _dueSection(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,18 +385,25 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: r.sp(10)),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: r.sp(12),
+            vertical: r.sp(12),
+          ),
           decoration: BoxDecoration(
             color: context.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(r.sp(14)),
             border: Border.all(color: context.border),
           ),
           child: Row(
             children: [
-              Icon(Icons.calendar_today, size: 18, color: context.textMuted),
-              const SizedBox(width: 10),
+              Icon(
+                Icons.calendar_today,
+                size: r.sp(18),
+                color: context.textMuted,
+              ),
+              SizedBox(width: r.sp(10)),
               Expanded(
                 child: Text(
                   _dueDateTime == null
@@ -409,6 +427,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Widget _tagsSection(BuildContext context) {
     final t = AppLocalizations.of(context)!;
+    final r = R(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,28 +439,33 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: r.sp(10)),
         Row(
           children: [
             Expanded(
               child: TextField(
                 controller: _tagController,
-                decoration: InputDecoration(hintText: t.addTagsHint),
+                decoration: InputDecoration(
+                  hintText: t.addTagsHint,
+                  hintStyle: TextStyle(color: context.textMuted),
+                ),
                 onSubmitted: (_) => _addTag(),
-                onChanged: (_) => setState(() {}),
               ),
             ),
-            const SizedBox(width: 8),
-            IconButton(onPressed: _addTag, icon: const Icon(Icons.add)),
+            SizedBox(width: r.sp(8)),
+            IconButton(
+              onPressed: _addTag,
+              icon: Icon(Icons.add, color: context.primary),
+            ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: r.sp(10)),
         if (_tags.isEmpty)
           Text(t.noTags, style: TextStyle(color: context.textMuted))
         else
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: r.sp(8),
+            runSpacing: r.sp(8),
             children: _tags.map((tag) {
               final c = TagColors.resolve(tag);
               return Chip(
