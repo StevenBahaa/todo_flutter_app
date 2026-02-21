@@ -213,7 +213,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{No tasks left} =1{1 task left} other{{count} tasks left}}'**
-  String tasksLeft(num count);
+  String tasksLeft(int count);
 
   /// No description provided for @overdue.
   ///
@@ -249,7 +249,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'+{count} more'**
-  String moreCount(num count);
+  String moreCount(int count);
 
   /// No description provided for @priorityLow.
   ///
@@ -484,6 +484,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No tags'**
   String get noTags;
+
+  /// No description provided for @user.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get user;
+
+  /// No description provided for @todayTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Today Tasks'**
+  String get todayTasks;
+
+  /// No description provided for @incoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming'**
+  String get incoming;
+
+  /// No description provided for @overdueCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} overdue'**
+  String overdueCount(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

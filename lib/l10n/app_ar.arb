@@ -1,81 +1,118 @@
 {
   "@@locale": "ar",
+
   "settings": "الإعدادات",
   "manageProfile": "إدارة الملف الشخصي",
   "theme": "المظهر",
   "light": "فاتح",
   "dark": "داكن",
   "language": "اللغة",
-  "english": "English",
+  "english": "الإنجليزية",
   "arabic": "العربية",
+
   "welcomeBack": "مرحبًا بعودتك،",
   "today": "اليوم",
   "upcoming": "القادم",
   "urgentForToday": "المهم لليوم",
   "seeAll": "عرض الكل",
+
   "nothingScheduled": "لا يوجد مهام لليوم ✨",
   "addTaskStartDay": "أضف مهمة وابدأ يومك.",
+
   "done": "تم",
   "allDone": "تم الكل",
   "allTasksDoneToday": "كل مهام اليوم تمت 🎉",
+
   "todayCompleted": "اليوم (مكتمل)",
+
   "tasksLeft": "{count, plural, =0{لا توجد مهام متبقية} =1{مهمة واحدة متبقية} =2{مهمتان متبقيتان} few{{count} مهام متبقية} many{{count} مهمة متبقية} other{{count} مهمة متبقية}}",
-  "@tasksLeft": { "placeholders": { "count": { "type": "num" } } },
+  "@tasksLeft": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
   "overdue": "متأخرة",
-"cancel": "إلغاء",
-"delete": "حذف",
-"deleteTaskTitle": "حذف المهمة؟",
-"deleteTaskBody": "سيتم حذف “{title}”.",
-"@deleteTaskBody": {
-  "placeholders": {
-    "title": { "type": "String" }
-  }
-},
-"moreCount": "+{count} المزيد",
-"@moreCount": {
-  "placeholders": {
-    "count": { "type": "num" }
-  }
-},
-"priorityLow": "منخفض",
-"priorityMedium": "متوسط",
-"priorityHigh": "مرتفع",
 
-"quickAddTaskTitle": "إضافة مهمة بسرعة",
-"add": "إضافة",
-"taskTitleHint": "عنوان المهمة...",
-"due": "الموعد",
-"addTagsHint": "أضف وسوم (مثال: عمل، عاجل)",
-"allTasksTitle": "كل المهام",
-"filterAll": "الكل",
-"filterOverdue": "متأخرة",
-"filterToday": "اليوم",
-"filterHighPriority": "أولوية عالية",
-"overdueTitle": "متأخرة",
-"todayTitle": "اليوم",
-"highPriorityTitle": "أولوية عالية",
-"noOverdueTasks": "لا توجد مهام متأخرة 🎉",
-"noTasksForToday": "لا توجد مهام لليوم",
-"noHighPriorityTasks": "لا توجد مهام بأولوية عالية",
-"noTasksYet": "لا توجد مهام بعد. اضغط + لإضافة مهمة.",
-"sectionOverdueUpper": "متأخرة",
-"sectionTodayUpper": "اليوم",
-"sectionUpcomingUpper": "قادمة",
-"sectionNoDateUpper": "بدون موعد",
-"completedLabel": "مكتمل",
-"completedTodayTitle": "مكتمل اليوم",
-"view": "عرض",
-"addTask": "إضافة مهمة",
-"taskDetailsTitle": "تفاصيل المهمة",
-"titleLabel": "العنوان",
-"descriptionLabel": "الوصف",
-"descriptionHint": "أضف ملاحظات...",
-"priorityLabel": "الأولوية",
-"deleteTaskCannotUndo": "لا يمكن التراجع عن هذا الإجراء.",
-"noDueDate": "بدون موعد",
-"pick": "اختيار",
-"clear": "مسح",
-"tagsLabel": "الوسوم",
-"noTags": "لا توجد وسوم"
+  "cancel": "إلغاء",
+  "delete": "حذف",
 
+  "deleteTaskTitle": "حذف المهمة؟",
+  "deleteTaskBody": "سيتم حذف “{title}”.",
+  "@deleteTaskBody": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+
+  "moreCount": "+{count} المزيد",
+  "@moreCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "priorityLow": "منخفض",
+  "priorityMedium": "متوسط",
+  "priorityHigh": "مرتفع",
+
+  "quickAddTaskTitle": "إضافة مهمة بسرعة",
+  "add": "إضافة",
+  "taskTitleHint": "عنوان المهمة...",
+  "due": "الموعد",
+  "addTagsHint": "أضف وسوم (مثال: عمل، عاجل)",
+
+  "allTasksTitle": "كل المهام",
+  "filterAll": "الكل",
+  "filterOverdue": "متأخرة",
+  "filterToday": "اليوم",
+  "filterHighPriority": "أولوية عالية",
+
+  "overdueTitle": "متأخرة",
+  "todayTitle": "اليوم",
+  "highPriorityTitle": "أولوية عالية",
+
+  "noOverdueTasks": "لا توجد مهام متأخرة 🎉",
+  "noTasksForToday": "لا توجد مهام لليوم",
+  "noHighPriorityTasks": "لا توجد مهام بأولوية عالية",
+  "noTasksYet": "لا توجد مهام بعد. اضغط + لإضافة مهمة.",
+
+  "sectionOverdueUpper": "متأخرة",
+  "sectionTodayUpper": "اليوم",
+  "sectionUpcomingUpper": "قادمة",
+  "sectionNoDateUpper": "بدون موعد",
+
+  "completedLabel": "مكتمل",
+  "completedTodayTitle": "مكتمل اليوم",
+  "view": "عرض",
+
+  "addTask": "إضافة مهمة",
+
+  "taskDetailsTitle": "تفاصيل المهمة",
+  "titleLabel": "العنوان",
+  "descriptionLabel": "الوصف",
+  "descriptionHint": "أضف ملاحظات...",
+
+  "priorityLabel": "الأولوية",
+
+  "deleteTaskCannotUndo": "لا يمكن التراجع عن هذا الإجراء.",
+
+  "noDueDate": "بدون موعد",
+  "pick": "اختيار",
+  "clear": "مسح",
+
+  "tagsLabel": "الوسوم",
+  "noTags": "لا توجد وسوم",
+
+  "user": "مستخدم",
+
+  "todayTasks": "مهام اليوم",
+  "incoming": "القادم",
+
+  "overdueCount": "{count} متأخرة",
+  "@overdueCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }

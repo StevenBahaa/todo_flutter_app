@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
               themeMode: s.themeMode,
 
               // LOCALE
-              locale: Locale(s.langCode),
+              locale: Locale(s.langCode.isEmpty ? 'en' : s.langCode),
 
               // ✅ This makes AppLocalizations.of(context) NOT NULL
               localizationsDelegates: AppLocalizations.localizationsDelegates,

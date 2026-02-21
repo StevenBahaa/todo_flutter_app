@@ -27,7 +27,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get language => 'اللغة';
 
   @override
-  String get english => 'English';
+  String get english => 'الإنجليزية';
 
   @override
   String get arabic => 'العربية';
@@ -66,7 +66,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get todayCompleted => 'اليوم (مكتمل)';
 
   @override
-  String tasksLeft(num count) {
+  String tasksLeft(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -98,7 +98,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String moreCount(num count) {
+  String moreCount(int count) {
     return '+$count المزيد';
   }
 
@@ -218,4 +218,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noTags => 'لا توجد وسوم';
+
+  @override
+  String get user => 'مستخدم';
+
+  @override
+  String get todayTasks => 'مهام اليوم';
+
+  @override
+  String get incoming => 'القادم';
+
+  @override
+  String overdueCount(int count) {
+    return '$count متأخرة';
+  }
 }

@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+
+import 'package:todo_list/core/theme/app_colors.dart';
+import 'package:todo_list/core/widgets/task_card.dart';
 import 'package:todo_list/data/local/hive_boxes.dart';
+import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/settings/view/settings_screen.dart';
+import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
+import 'package:todo_list/features/tasks/cubit/tasks_state.dart';
+import 'package:todo_list/features/tasks/sheets/quick_add_sheet.dart';
+import 'package:todo_list/features/tasks/view/comprehensive_task_list_screen.dart';
 import 'package:todo_list/l10n/app_localizations.dart';
-
-import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/task_card.dart';
-import '../../../data/models/task_enums.dart';
-import '../cubit/tasks_cubit.dart';
-import '../cubit/tasks_state.dart';
-import '../sheets/quick_add_sheet.dart';
-import 'comprehensive_task_list_screen.dart';
 
 class TodayDashboardScreen extends StatefulWidget {
   const TodayDashboardScreen({super.key});
@@ -32,23 +32,38 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  Future<void> _toggleFromToday(BuildContext context, TaskModel t) async {
-    final wasDone = t.status == TaskStatus.done.index;
+  Future<void> _toggleFromToday(BuildContext context, TaskModel task) async {
+    final wasDone = task.status == TaskStatus.done.index;
 
-    // Play exit animation only when going Todo -> Done
+    // Todo -> Done => play exit animation
     if (!wasDone) {
-      setState(() => _exiting.add(t.id));
+      setState(() => _exiting.add(task.id));
 
-      context.read<TasksCubit>().toggleDone(t);
+      context.read<TasksCubit>().toggleDone(task);
 
       await Future.delayed(const Duration(milliseconds: 320));
-
       if (!mounted) return;
-      setState(() => _exiting.remove(t.id));
+
+      setState(() => _exiting.remove(task.id));
     } else {
-      // Done -> Todo (no exit animation)
-      context.read<TasksCubit>().toggleDone(t);
+      // Done -> Todo
+      context.read<TasksCubit>().toggleDone(task);
     }
+  }
+
+  void _openQuickAdd(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const QuickAddSheet(),
+    );
+  }
+
+  void _goToAllTasks(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ComprehensiveTaskListScreen()),
+    );
   }
 
   @override
@@ -60,13 +75,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add),
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (_) => const QuickAddSheet(),
-          );
-        },
+        onPressed: () => _openQuickAdd(context),
       ),
       body: SafeArea(
         child: BlocBuilder<TasksCubit, TasksState>(
@@ -74,73 +83,98 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             final now = DateTime.now();
             final today = _dateOnly(now);
 
-            // ----------------------------
-            // TODAY tasks (all: done + todo)
-            // ----------------------------
-            final todayTasks = state.tasks.where((task) {
+            // =========================
+            // Base lists (not done)
+            // =========================
+            final active = state.tasks.where((task) {
+              final isDone = task.status == TaskStatus.done.index;
+              return !isDone || _exiting.contains(task.id);
+            }).toList();
+
+            // Today (dated today)
+            final todayActive = active.where((task) {
               if (task.dueDateTime == null) return false;
               return _isSameDay(_dateOnly(task.dueDateTime!), today);
             }).toList();
 
-            final todayDone = todayTasks
-                .where((task) => task.status == TaskStatus.done.index)
-                .toList();
+            // Overdue (dated before now)
+            final overdueActive = active.where((task) {
+              final due = task.dueDateTime;
+              if (due == null) return false;
+              return !_isSameDay(_dateOnly(due), today) && due.isBefore(now);
+            }).toList();
 
-            final todayTodo =
-                todayTasks
-                    .where((task) => task.status != TaskStatus.done.index)
-                    .toList()
-                  ..sort((a, b) => b.priority.compareTo(a.priority));
+            // Today section tasks = today + overdue (active)
+            final todaySectionActive =
+                <TaskModel>[...overdueActive, ...todayActive]..sort((a, b) {
+                  // overdue first
+                  final aOver =
+                      a.dueDateTime != null && a.dueDateTime!.isBefore(now);
+                  final bOver =
+                      b.dueDateTime != null && b.dueDateTime!.isBefore(now);
+                  if (aOver && !bOver) return -1;
+                  if (!aOver && bOver) return 1;
 
-            // ----------------------------
-            // URGENT list: (todo + exiting)
-            // so item stays during fade-out
-            // ----------------------------
-            final urgentForToday = todayTasks.where((task) {
-              final isDone = task.status == TaskStatus.done.index;
-              return !isDone || _exiting.contains(task.id);
-            }).toList()..sort((a, b) => b.priority.compareTo(a.priority));
+                  // higher priority first
+                  return b.priority.compareTo(a.priority);
+                });
 
-            final leftToday = todayTodo.length;
+            // Incoming = future + no-date (active)
+            final incomingActive =
+                active.where((task) {
+                  final due = task.dueDateTime;
+                  if (due == null) return true; // no-date goes to incoming
+                  final day = _dateOnly(due);
 
-            final double progress = todayTasks.isEmpty
+                  // future only (after today) and not overdue
+                  return day.isAfter(today) && due.isAfter(now);
+                }).toList()..sort((a, b) {
+                  final ad = a.dueDateTime;
+                  final bd = b.dueDateTime;
+
+                  // dated first
+                  if (ad == null && bd == null) return 0;
+                  if (ad == null) return 1;
+                  if (bd == null) return -1;
+
+                  return ad.compareTo(bd); // earlier first
+                });
+
+            final incomingTop = incomingActive.take(3).toList();
+
+            // =========================
+            // Progress (Today + Overdue)
+            // =========================
+            // done from same group: (today or overdue)
+            final doneForProgress = state.tasks.where((task) {
+              if (task.status != TaskStatus.done.index) return false;
+              final due = task.dueDateTime;
+              if (due == null) return false;
+
+              final day = _dateOnly(due);
+              final isToday = _isSameDay(day, today);
+              final isOverdue = due.isBefore(now) && !isToday;
+              return isToday || isOverdue;
+            }).toList();
+
+            final totalForProgress =
+                todaySectionActive.length + doneForProgress.length;
+
+            final double progress = totalForProgress == 0
                 ? 0.0
-                : (todayDone.length / todayTasks.length);
+                : (doneForProgress.length / totalForProgress);
+
             final int percent = (progress * 100).round();
 
-            // ----------------------------
-            // UPCOMING + OVERDUE (not done)
-            // - include tasks with no date
-            // - include all dated tasks except today (past + future)
-            // - sort overdue first, then upcoming, then no-date
-            // ----------------------------
-            final upcomingAll =
-                state.tasks
-                    .where((task) => task.status != TaskStatus.done.index)
-                    .where((task) {
-                      if (task.dueDateTime == null) return true;
-                      final taskDay = _dateOnly(task.dueDateTime!);
-                      return !_isSameDay(taskDay, today);
-                    })
-                    .toList()
-                  ..sort((a, b) {
-                    final ad = a.dueDateTime;
-                    final bd = b.dueDateTime;
+            // Completed list for expansion = doneForProgress
+            final completedList = List<TaskModel>.of(doneForProgress)
+              ..sort(
+                (a, b) =>
+                    (b.dueDateTime ?? now).compareTo(a.dueDateTime ?? now),
+              );
 
-                    if (ad == null && bd == null) return 0;
-                    if (ad == null) return 1;
-                    if (bd == null) return -1;
-
-                    final aOverdue = _dateOnly(ad).isBefore(today);
-                    final bOverdue = _dateOnly(bd).isBefore(today);
-
-                    if (aOverdue && !bOverdue) return -1;
-                    if (!aOverdue && bOverdue) return 1;
-
-                    return ad.compareTo(bd);
-                  });
-
-            final upcomingTop = upcomingAll.take(3).toList();
+            // tasks left (today+overdue active)
+            final leftCount = todaySectionActive.length;
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
@@ -149,11 +183,11 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
 
                 const SizedBox(height: 24),
 
-                // ----------------------------
-                // TOP CARD (today empty OR progress ring)
-                // ----------------------------
-                if (todayTasks.isEmpty) ...[
-                  _todayEmptyCard(context),
+                // =========================
+                // Progress ring (based on today+overdue)
+                // =========================
+                if (totalForProgress == 0) ...[
+                  _todayEmptyCard(context, onAdd: () => _openQuickAdd(context)),
                 ] else ...[
                   Center(
                     child: Stack(
@@ -195,7 +229,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              leftToday == 0 ? t.allDone : t.done,
+                              leftCount == 0 ? t.allDone : t.done,
                               style: const TextStyle(
                                 color: AppColors.textMuted,
                                 fontWeight: FontWeight.w800,
@@ -209,9 +243,9 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    leftToday == 0
+                    leftCount == 0
                         ? t.allTasksDoneToday
-                        : t.tasksLeft(leftToday),
+                        : t.tasksLeft(leftCount),
                     style: const TextStyle(
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w600,
@@ -220,38 +254,54 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                   ),
                 ],
 
-                // ----------------------------
-                // URGENT FOR TODAY (only if todo exists)
-                // ----------------------------
-                if (todayTasks.isNotEmpty && leftToday > 0) ...[
+                // =========================
+                // TODAY TASKS section (today + overdue)
+                // =========================
+                if (todaySectionActive.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   _sectionTitle(
                     context,
-                    t.urgentForToday,
+                    t.todayTasks,
                     onSeeAll: () => _goToAllTasks(context),
                   ),
                   const SizedBox(height: 8),
-                  ...urgentForToday.map((task) => _animatedTask(context, task)),
-                ],
-
-                // ----------------------------
-                // TODAY COMPLETED
-                // ----------------------------
-                if (todayDone.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _completedTodaySection(
-                    context,
-                    todayDone,
-                    initiallyExpanded: leftToday == 0,
+                  ...todaySectionActive.map(
+                    (task) => _animatedTask(context, task),
                   ),
                 ],
 
-                // ----------------------------
-                // UPCOMING (always if exists)
-                // ----------------------------
-                if (upcomingTop.isNotEmpty) ...[
+                // =========================
+                // Completed (today + overdue)
+                // =========================
+                if (completedList.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _completedTodaySection(
+                    context,
+                    completedList,
+                    initiallyExpanded: leftCount == 0,
+                  ),
+                ],
+
+                // =========================
+                // INCOMING (future + no-date)
+                // =========================
+                if (incomingTop.isNotEmpty) ...[
                   const SizedBox(height: 24),
-                  _upcomingSection(context, upcomingTop),
+                  _sectionTitle(
+                    context,
+                    t.incoming,
+                    onSeeAll: () => _goToAllTasks(context),
+                  ),
+                  const SizedBox(height: 8),
+                  ...incomingTop.map(
+                    (task) => TaskCard(
+                      task: task,
+                      onToggleDone: () =>
+                          context.read<TasksCubit>().toggleDone(task),
+                      onDelete: () =>
+                          context.read<TasksCubit>().deleteTask(task.id),
+                    ),
+                  ),
                 ],
               ],
             );
@@ -262,13 +312,6 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
   }
 
   // ========================= UI HELPERS =========================
-
-  void _goToAllTasks(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ComprehensiveTaskListScreen()),
-    );
-  }
 
   Widget _sectionTitle(
     BuildContext context,
@@ -344,7 +387,6 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
             children: [
               Text(
                 t.todayCompleted,
-
                 style: const TextStyle(
                   color: AppColors.textMuted,
                   fontWeight: FontWeight.w800,
@@ -394,30 +436,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
     );
   }
 
-  Widget _upcomingSection(BuildContext context, List<TaskModel> upcomingTop) {
-    final t = AppLocalizations.of(context)!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionTitle(
-          context,
-          t.upcoming,
-          onSeeAll: () => _goToAllTasks(context),
-        ),
-        const SizedBox(height: 8),
-        ...upcomingTop.map(
-          (task) => TaskCard(
-            task: task,
-            onToggleDone: () => context.read<TasksCubit>().toggleDone(task),
-            onDelete: () => context.read<TasksCubit>().deleteTask(task.id),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _todayEmptyCard(BuildContext context) {
+  Widget _todayEmptyCard(BuildContext context, {VoidCallback? onAdd}) {
     final t = AppLocalizations.of(context)!;
 
     return Container(
@@ -466,13 +485,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => const QuickAddSheet(),
-                );
-              },
+              onPressed: onAdd,
               icon: const Icon(Icons.add),
               label: Text(t.addTask),
             ),
@@ -501,7 +514,7 @@ class _ValueListenableHeader extends StatelessWidget {
       ),
       builder: (context, Box box, _) {
         final rawName = (box.get('user_name') as String?)?.trim();
-        final name = (rawName != null && rawName.isNotEmpty) ? rawName : 'User';
+        final name = (rawName != null && rawName.isNotEmpty) ? rawName : t.user;
 
         final rawPath = (box.get('user_photo_path') as String?)?.trim();
         final File? photoFile =

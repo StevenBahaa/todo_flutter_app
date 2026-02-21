@@ -66,7 +66,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayCompleted => 'Today (Completed)';
 
   @override
-  String tasksLeft(num count) {
+  String tasksLeft(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -95,7 +95,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String moreCount(num count) {
+  String moreCount(int count) {
     return '+$count more';
   }
 
@@ -215,4 +215,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTags => 'No tags';
+
+  @override
+  String get user => 'User';
+
+  @override
+  String get todayTasks => 'Today Tasks';
+
+  @override
+  String get incoming => 'Incoming';
+
+  @override
+  String overdueCount(int count) {
+    return '$count overdue';
+  }
 }
