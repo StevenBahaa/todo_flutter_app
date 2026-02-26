@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:todo_list/data/models/sub_task_model.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/data/repositories/tasks_repository.dart';
@@ -9,6 +10,25 @@ class TasksCubit extends Cubit<TasksState> {
   final TasksRepository _repo;
 
   TasksCubit(this._repo) : super(const TasksState());
+
+  TaskModel? _findTask(List<TaskModel> tasks, String taskId) {
+    try {
+      return tasks.firstWhere((t) => t.id == taskId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  int _smartStatusFromSubTasks(List<SubTaskModel> subs) {
+    if (subs.isEmpty) return TaskStatus.todo.index;
+    return subs.every((s) => s.isDone)
+        ? TaskStatus.done.index
+        : TaskStatus.todo.index;
+  }
+
+  List<TaskModel> _replaceTask(List<TaskModel> tasks, TaskModel updated) {
+    return tasks.map((t) => t.id == updated.id ? updated : t).toList();
+  }
 
   void loadTasks() {
     final prev = state.tasks;
@@ -29,23 +49,18 @@ class TasksCubit extends Cubit<TasksState> {
 
   Future<void> createTask(TaskModel task) async {
     final update = [task, ...state.tasks];
-
     emit(state.copyWith(status: TasksStatus.success, tasks: update));
-
     try {
       await _repo.add(task);
     } catch (e) {
-      state.copyWith(
-        status: TasksStatus.failure,
-        errorMessage: e.toString(),
-        tasks: state.tasks,
+      emit(
+        state.copyWith(status: TasksStatus.failure, errorMessage: e.toString()),
       );
     }
   }
 
   Future<void> updateTask(TaskModel task) async {
     final prev = state.tasks;
-    
     final updated = prev.map((t) => t.id == task.id ? task : t).toList();
     emit(state.copyWith(status: TasksStatus.success, tasks: updated));
 
@@ -82,10 +97,27 @@ class TasksCubit extends Cubit<TasksState> {
 
   Future<void> toggleDone(TaskModel task) async {
     final prev = state.tasks;
-    final isDone = task.status == TaskStatus.done.index;
-    final updatedTask = task.copyWith(
-      status: isDone ? TaskStatus.todo.index : TaskStatus.done.index,
-    );
+
+    TaskModel updatedTask;
+
+    final subs = task.safeSubTasks;
+    if (subs.isNotEmpty) {
+      final allDone = subs.every((s) => s.isDone);
+      final newSubs = subs
+          .map((s) => s.copyWith(isDone: !allDone))
+          .toList(growable: false);
+
+      final newStatus = (!allDone)
+          ? TaskStatus.done.index
+          : TaskStatus.todo.index;
+
+      updatedTask = task.copyWith(status: newStatus, subtasks: newSubs);
+    } else {
+      final isDone = task.status == TaskStatus.done.index;
+      updatedTask = task.copyWith(
+        status: isDone ? TaskStatus.todo.index : TaskStatus.done.index,
+      );
+    }
 
     final updatedList = prev
         .map((t) => t.id == updatedTask.id ? updatedTask : t)
@@ -108,5 +140,119 @@ class TasksCubit extends Cubit<TasksState> {
 
   void setFilter(TasksFilter f) {
     emit(state.copyWith(filter: f));
+  }
+
+  Future<void> addSubTask({
+    required String taskId,
+    required String title,
+  }) async {
+    final prev = state.tasks;
+    final task = prev.firstWhere((t) => t.id == taskId);
+
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return;
+
+    final newSub = SubTaskModel(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: trimmed,
+      isDone: false,
+    );
+
+    final newSubs = [...task.safeSubTasks, newSub];
+
+    final updatedTask = task.copyWith(
+      subtasks: List.unmodifiable(newSubs),
+      status: _smartStatusFromSubTasks(newSubs), // ✅ will be todo
+    );
+
+    final updatedList = prev
+        .map((t) => t.id == updatedTask.id ? updatedTask : t)
+        .toList();
+
+    emit(state.copyWith(status: TasksStatus.success, tasks: updatedList));
+
+    try {
+      await _repo.update(updatedTask);
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: TasksStatus.failure,
+          errorMessage: e.toString(),
+          tasks: prev,
+        ),
+      );
+    }
+  }
+
+  Future<void> toggleSubTask({
+    required String taskId,
+    required String subTaskId,
+  }) async {
+    final prev = state.tasks;
+
+    final task = prev.firstWhere((t) => t.id == taskId);
+
+    final subs = task.safeSubTasks;
+    final idx = subs.indexWhere((s) => s.id == subTaskId);
+    if (idx == -1) return;
+
+    final toggled = subs[idx].copyWith(isDone: !subs[idx].isDone);
+    final newSubs = [...subs]..[idx] = toggled;
+
+    final updatedTask = task.copyWith(
+      subtasks: List.unmodifiable(newSubs),
+      status: _smartStatusFromSubTasks(newSubs), // ✅ auto sync
+    );
+
+    final updatedList = prev
+        .map((t) => t.id == updatedTask.id ? updatedTask : t)
+        .toList();
+
+    emit(state.copyWith(status: TasksStatus.success, tasks: updatedList));
+
+    try {
+      await _repo.update(updatedTask);
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: TasksStatus.failure,
+          errorMessage: e.toString(),
+          tasks: prev,
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteSubTask({
+    required String taskId,
+    required String subTaskId,
+  }) async {
+    final prev = state.tasks;
+    final task = prev.firstWhere((t) => t.id == taskId);
+
+    final newSubs = task.safeSubTasks.where((s) => s.id != subTaskId).toList();
+
+    final updatedTask = task.copyWith(
+      subtasks: List.unmodifiable(newSubs),
+      status: _smartStatusFromSubTasks(newSubs),
+    );
+
+    final updatedList = prev
+        .map((t) => t.id == updatedTask.id ? updatedTask : t)
+        .toList();
+
+    emit(state.copyWith(status: TasksStatus.success, tasks: updatedList));
+
+    try {
+      await _repo.update(updatedTask);
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: TasksStatus.failure,
+          errorMessage: e.toString(),
+          tasks: prev,
+        ),
+      );
+    }
   }
 }

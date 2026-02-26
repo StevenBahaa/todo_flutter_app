@@ -1,5 +1,6 @@
 import 'package:hive_flutter/adapters.dart';
 import 'package:todo_list/data/local/hive_boxes.dart';
+import 'package:todo_list/data/models/sub_task_model.dart';
 import 'package:todo_list/data/models/task_model.dart';
 
 class HiveInit {
@@ -10,8 +11,9 @@ class HiveInit {
     if (!Hive.isAdapterRegistered(TaskModelAdapter().typeId)) {
       Hive.registerAdapter(TaskModelAdapter());
     }
-
-
+    if (!Hive.isAdapterRegistered(SubTaskModelAdapter().typeId)) {
+      Hive.registerAdapter(SubTaskModelAdapter());
+    }
 
     // Open boxes
     await Hive.openBox<TaskModel>(HiveBoxs.tasks);

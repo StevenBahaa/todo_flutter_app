@@ -1,4 +1,5 @@
 import 'package:hive_flutter/adapters.dart';
+import 'package:todo_list/data/models/sub_task_model.dart';
 import 'package:todo_list/data/models/task_enums.dart';
 
 part 'task_model.g.dart';
@@ -35,6 +36,9 @@ class TaskModel extends HiveObject {
   @HiveField(9)
   final DateTime updatedAt;
 
+  @HiveField(10)
+  final List<SubTaskModel>? subtasks;
+
   TaskModel({
     required this.id,
     required this.title,
@@ -46,6 +50,7 @@ class TaskModel extends HiveObject {
     required this.tags,
     required this.createdAt,
     required this.updatedAt,
+    this.subtasks,
   });
 
   factory TaskModel.newTask({
@@ -78,6 +83,7 @@ class TaskModel extends HiveObject {
     DateTime? dueDateTime,
     String? categoryId,
     List<String>? tags,
+    List<SubTaskModel>? subtasks,
   }) {
     return TaskModel(
       id: id,
@@ -90,6 +96,9 @@ class TaskModel extends HiveObject {
       tags: tags ?? this.tags,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
+      subtasks: subtasks ?? this.subtasks,
     );
   }
+
+  List<SubTaskModel> get safeSubTasks => subtasks ?? [];
 }

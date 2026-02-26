@@ -226,8 +226,21 @@ class _ComprehensiveTaskListScreenState
           opacity: exiting ? 0.0 : 1.0,
           child: TaskCard(
             task: x,
-            onToggleDone: () => _toggleWithExit(context, x),
+            onToggleDone: () => context.read<TasksCubit>().toggleDone(x),
             onDelete: () => context.read<TasksCubit>().deleteTask(x.id),
+
+            onToggleSubTask: (subId) => context
+                .read<TasksCubit>()
+                .toggleSubTask(taskId: x.id, subTaskId: subId),
+
+            onAddSubTask: (title) => context.read<TasksCubit>().addSubTask(
+              taskId: x.id,
+              title: title,
+            ),
+
+            onDeleteSubTask: (subId) => context
+                .read<TasksCubit>()
+                .deleteSubTask(taskId: x.id, subTaskId: subId),
           ),
         ),
       );
@@ -432,22 +445,26 @@ class _ComprehensiveTaskListScreenState
                           final task = sheetTasks[i];
                           return TaskCard(
                             task: task,
-                            onToggleDone: () {
-                              setState(
-                                () => sheetTasks.removeWhere(
-                                  (x) => x.id == task.id,
+                            onToggleDone: () =>
+                                context.read<TasksCubit>().toggleDone(task),
+                            onDelete: () =>
+                                context.read<TasksCubit>().deleteTask(task.id),
+
+                            onToggleSubTask: (subId) =>
+                                context.read<TasksCubit>().toggleSubTask(
+                                  taskId: task.id,
+                                  subTaskId: subId,
                                 ),
-                              );
-                              context.read<TasksCubit>().toggleDone(task);
-                            },
-                            onDelete: () {
-                              setState(
-                                () => sheetTasks.removeWhere(
-                                  (x) => x.id == task.id,
+
+                            onAddSubTask: (title) => context
+                                .read<TasksCubit>()
+                                .addSubTask(taskId: task.id, title: title),
+
+                            onDeleteSubTask: (subId) =>
+                                context.read<TasksCubit>().deleteSubTask(
+                                  taskId: task.id,
+                                  subTaskId: subId,
                                 ),
-                              );
-                              context.read<TasksCubit>().deleteTask(task.id);
-                            },
                           );
                         },
                       ),

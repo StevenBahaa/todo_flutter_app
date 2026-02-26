@@ -17,6 +17,8 @@ class TasksState extends Equatable {
     this.filter = TasksFilter.all,
   });
 
+  
+
   TasksState copyWith({
     TasksStatus? status,
     List<TaskModel>? tasks,
@@ -30,7 +32,6 @@ class TasksState extends Equatable {
       filter: filter ?? this.filter,
     );
   }
-
   @override
   List<Object?> get props => [status, tasks, errorMessage, filter];
 }

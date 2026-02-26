@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:todo_list/core/theme/theme_x.dart';
 import 'package:todo_list/core/utils/responsive.dart';
 import 'package:todo_list/data/models/task_enums.dart';
@@ -7,6 +8,7 @@ import 'package:todo_list/data/models/task_model.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_cubit.dart';
 import 'package:todo_list/features/tasks/cubit/tasks_state.dart';
 import 'package:todo_list/features/tasks/sheets/quick_add_sheet.dart';
+import 'package:todo_list/features/tasks/utils/tasks_groups.dart';
 import 'package:todo_list/features/tasks/view/comprehensive_task_list_screen.dart';
 import 'package:todo_list/features/tasks/widgets/task_card.dart';
 import 'package:todo_list/features/today/utils/today_filters.dart';
@@ -23,9 +25,16 @@ class TodayDashboardScreen extends StatefulWidget {
 class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
   final Set<String> _exiting = {};
 
-  Future<void> _toggleFromToday(BuildContext context, TaskModel task) async {
-    final wasDone = task.status == TaskStatus.done.index;
+  bool _isTaskDoneSmart(TaskModel x) {
+    final subs = x.safeSubTasks;
+    if (subs.isNotEmpty) return subs.every((s) => s.isDone);
+    return x.status == TaskStatus.done.index;
+  }
 
+  Future<void> _toggleFromToday(BuildContext context, TaskModel task) async {
+    final wasDone = _isTaskDoneSmart(task);
+
+    // keep your "fade out" only when moving from active -> done
     if (!wasDone) {
       setState(() => _exiting.add(task.id));
       context.read<TasksCubit>().toggleDone(task);
@@ -60,9 +69,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context)!;
     final r = R(context);
-    final ring = (r.shortest * 0.52).clamp(150.0, 210.0);
 
     return Scaffold(
       backgroundColor: context.bg,
@@ -74,15 +81,26 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
       body: SafeArea(
         child: BlocBuilder<TasksCubit, TasksState>(
           builder: (context, state) {
+            final t = AppLocalizations.of(context)!;
             final now = DateTime.now();
 
+            // ✅ build groups as you already do
             final groups = buildTodayGroups(
               allTasks: state.tasks,
               exitingIds: _exiting,
               now: now,
             );
 
+            // ✅ CORRECT progress: always compute from the SAME list (all tasks)
+            // hybrid (subtasks if exist, else task status) inside computeProgressCounts
+            final counts = computeProgressCounts(state.tasks);
+
             final incomingTop = groups.incomingActive.take(3).toList();
+
+            final hasOverdue = groups.todayOverdueActive.any((x) {
+              final due = x.dueDateTime;
+              return due != null && due.isBefore(now) && !_isTaskDoneSmart(x);
+            });
 
             return ListView(
               padding: EdgeInsets.fromLTRB(
@@ -93,30 +111,21 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
               ),
               children: [
                 TodayHeader(now: now),
-
                 SizedBox(height: r.sp(24)),
 
-                if (groups.totalForProgress == 0) ...[
+                // ✅ Empty vs momentum based on COUNTS (not group totals)
+                if (counts.total == 0) ...[
                   _todayEmptyCard(context, onAdd: () => _openQuickAdd(context)),
                 ] else ...[
-                  _progressRing(
+                  _momentumCard(
                     context,
-                    ring: ring,
-                    percent: groups.percent,
-                    progress: groups.progress,
-                    leftCount: groups.leftCount,
+                    progress: counts.ratio,
+                    doneCount: counts.done,
+                    totalCount: counts.total,
+                    leftCount: counts.left,
+                    hasOverdue: hasOverdue,
                   ),
                   SizedBox(height: r.sp(24)),
-                  Text(
-                    groups.leftCount == 0
-                        ? t.allTasksDoneToday
-                        : t.tasksLeft(groups.leftCount),
-                    style: TextStyle(
-                      color: context.textMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
                 ],
 
                 if (groups.todayOverdueActive.isNotEmpty) ...[
@@ -137,7 +146,7 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                   _completedTodaySection(
                     context,
                     groups.completedSorted,
-                    initiallyExpanded: groups.leftCount == 0,
+                    initiallyExpanded: counts.left == 0,
                   ),
                 ],
 
@@ -156,6 +165,18 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                           context.read<TasksCubit>().toggleDone(task),
                       onDelete: () =>
                           context.read<TasksCubit>().deleteTask(task.id),
+
+                      onToggleSubTask: (subId) => context
+                          .read<TasksCubit>()
+                          .toggleSubTask(taskId: task.id, subTaskId: subId),
+
+                      onAddSubTask: (title) => context
+                          .read<TasksCubit>()
+                          .addSubTask(taskId: task.id, title: title),
+
+                      onDeleteSubTask: (subId) => context
+                          .read<TasksCubit>()
+                          .deleteSubTask(taskId: task.id, subTaskId: subId),
                     ),
                   ),
                 ],
@@ -167,69 +188,108 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
     );
   }
 
-  // =============== UI widgets ===============
+  // ================= Momentum Card =================
 
-  Widget _progressRing(
+  Widget _momentumCard(
     BuildContext context, {
-    required double ring,
-    required int percent,
     required double progress,
+    required int doneCount,
+    required int totalCount,
     required int leftCount,
+    required bool hasOverdue,
   }) {
     final t = AppLocalizations.of(context)!;
     final r = R(context);
 
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
+    final clamped = progress.clamp(0.0, 1.0);
+
+    final barColor = leftCount == 0
+        ? context.success
+        : (hasOverdue ? context.warning : context.primary);
+
+    final subtitle = leftCount == 0
+        ? t.allTasksDoneToday
+        : hasOverdue
+        ? t.overdue
+        : t.tasksLeft(leftCount);
+
+    return Container(
+      padding: EdgeInsets.all(r.sp(16)),
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: ring,
-            height: ring,
-            child: TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: 450),
-              curve: Curves.easeOutCubic,
-              tween: Tween<double>(
-                begin: 0,
-                end: progress.clamp(0.0, 1.0).toDouble(),
+          Row(
+            children: [
+              Text(
+                t.todayTitle,
+                style: TextStyle(
+                  color: context.text,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
               ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: barColor.withAlpha((0.14 * 255).toInt()),
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(
+                    color: barColor.withAlpha((0.35 * 255).toInt()),
+                  ),
+                ),
+                child: Text(
+                  "$doneCount / $totalCount",
+                  style: TextStyle(
+                    color: barColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: r.sp(10)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              tween: Tween(begin: 0.0, end: clamped),
               builder: (context, value, _) {
-                return CircularProgressIndicator(
+                return LinearProgressIndicator(
                   value: value,
-                  strokeWidth: 12,
-                  backgroundColor: context.border,
-                  valueColor: AlwaysStoppedAnimation(context.primary),
-                  strokeCap: StrokeCap.round,
+                  minHeight: 10,
+                  backgroundColor: context.border.withAlpha(
+                    (0.35 * 255).toInt(),
+                  ),
+                  valueColor: AlwaysStoppedAnimation(barColor),
                 );
               },
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "$percent%",
-                style: TextStyle(
-                  color: context.text,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              SizedBox(height: r.sp(4)),
-              Text(
-                leftCount == 0 ? t.allDone : t.done,
-                style: TextStyle(
-                  color: context.textMuted,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
+          SizedBox(height: r.sp(10)),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: context.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
     );
   }
+
+  // ================= UI widgets =================
 
   Widget _sectionTitle(
     BuildContext context,
@@ -270,8 +330,26 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
         opacity: exiting ? 0.0 : 1.0,
         child: TaskCard(
           task: task,
+
+          // ✅ Use the special today toggle for exit animation
           onToggleDone: () => _toggleFromToday(context, task),
+
           onDelete: () => context.read<TasksCubit>().deleteTask(task.id),
+
+          onToggleSubTask: (subId) => context.read<TasksCubit>().toggleSubTask(
+            taskId: task.id,
+            subTaskId: subId,
+          ),
+
+          onAddSubTask: (title) => context.read<TasksCubit>().addSubTask(
+            taskId: task.id,
+            title: title,
+          ),
+
+          onDeleteSubTask: (subId) => context.read<TasksCubit>().deleteSubTask(
+            taskId: task.id,
+            subTaskId: subId,
+          ),
         ),
       ),
     );
@@ -342,6 +420,18 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                         context.read<TasksCubit>().toggleDone(task),
                     onDelete: () =>
                         context.read<TasksCubit>().deleteTask(task.id),
+
+                    onToggleSubTask: (subId) => context
+                        .read<TasksCubit>()
+                        .toggleSubTask(taskId: task.id, subTaskId: subId),
+
+                    onAddSubTask: (title) => context
+                        .read<TasksCubit>()
+                        .addSubTask(taskId: task.id, title: title),
+
+                    onDeleteSubTask: (subId) => context
+                        .read<TasksCubit>()
+                        .deleteSubTask(taskId: task.id, subTaskId: subId),
                   ),
                 ),
               )

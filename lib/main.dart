@@ -27,7 +27,6 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
   final bool seenOnboarding;
-
   const MyApp({super.key, required this.seenOnboarding});
 
   @override
