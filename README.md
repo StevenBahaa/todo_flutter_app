@@ -9,31 +9,37 @@ This project demonstrates real-world Flutter practices including feature-based s
 
 ## 📱 App Preview
 
-### 🧭 Onboarding – Profile
+### 🧭 Onboarding & Today Dashboard
 
-<img src="screenshots/onboarding_profile.jpeg" alt="Onboarding – profile" width="300" />
+<p>
+  <img src="screenshots/onboarding_profile.jpeg" alt="Onboarding – profile" width="200" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="screenshots/today_dashboard.jpeg" alt="Today Dashboard" width="200" />
+</p>
 
+### ✅ All Done & Task Details
 
-### 🌤 Today Dashboard
-<img src="screenshots/today_dashboard.jpeg" alt="Today Dashboard" width="300" />
+<p>
+  <img src="screenshots/today_all_done.jpeg" alt="Today all done" width="200" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="screenshots/task_details.jpeg" alt="Task Details" width="200" />
+</p>
 
-### ✅ Today Dashboard – All Done
-<img src="screenshots/today_all_done.jpeg" alt="Today all done" width="300" />
+### 🧩 Subtasks & All Tasks
 
-### 📝 Task Details
-<img src="screenshots/task_details.jpeg" alt="Task Details" width="300" />
+<p>
+  <img src="screenshots/sub_tasks.jpeg" alt="Sub Tasks" width="200" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="screenshots/all_tasks.jpeg" alt="All Tasks & Filters" width="200" />
+</p>
 
-### ⚙️ Sub Tasks
-<img src="screenshots/sub_tasks.jpeg" alt="Sub Tasks" width="300" />
+### ⚙️ Settings & 🌍 Localization (Arabic)
 
-### 📋 All Tasks & Filters
-<img src="screenshots/all_tasks.jpeg" alt="All Tasks & Filters" width="300" />
-
-### ⚙️ Settings
-<img src="screenshots/settings.jpeg" alt="Settings" width="300" />
-
-### 🌍 Localization (Arabic)
-<img src="screenshots/today_dashboard_ar.jpeg" alt="Today Dashboard – Arabic" width="300" />
+<p>
+  <img src="screenshots/settings.jpeg" alt="Settings" width="200" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="screenshots/today_dashboard_ar.jpeg" alt="Today Dashboard – Arabic" width="200" />
+</p>
 
 ---
 
