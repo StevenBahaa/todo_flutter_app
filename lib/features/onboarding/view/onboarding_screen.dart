@@ -6,8 +6,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:todo_list/features/today/view/today_dashboard_screen.dart';
+import 'package:todo_list/features/settings/cubit/settings_cubit.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/local/user_profile_prefs.dart';
 
@@ -63,6 +65,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     await _prefs.saveProfile(name: name, photoPath: _photoPath);
     await _prefs.setOnboardingDone(true);
+
+    // Keep SettingsCubit in sync immediately so SettingsScreen shows fresh data
+    if (mounted) {
+      final settings = context.read<SettingsCubit>();
+      await settings.setName(name);
+      if (_photoPath != null) {
+        await settings.setPhotoPath(_photoPath);
+      }
+    }
 
     if (!mounted) return;
     Navigator.pushReplacement(
