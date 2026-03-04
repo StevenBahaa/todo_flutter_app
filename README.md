@@ -9,16 +9,41 @@ This project demonstrates real-world Flutter practices including feature-based s
 
 ## 📱 App Preview
 
-> Add your screenshots inside a `/screenshots` folder.
+
+## 📱 App Preview
+
+### 🧭 Onboarding – Profile
+
+![Onboarding – profile](screenshots/onboarding_profile.jpeg)
 
 ### 🌤 Today Dashboard
-![Today Dashboard](screenshots/today_dashboard.png)
+
+![Today Dashboard](screenshots/today_dashboard.jpeg)
+
+### ✅ Today Dashboard – All Done
+
+![Today all done](screenshots/today_all_done.jpeg)
 
 ### 📝 Task Details
-![Task Details](screenshots/task_details.png)
+
+![Task Details](screenshots/task_details.jpeg)
+
+### ⚙️ Sub Tasks
+
+![Settings](screenshots/sub_tasks.jpeg)
+
+### 📋 All Tasks & Filters
+
+![All Tasks](screenshots/all_tasks.jpeg)
+
 
 ### ⚙️ Settings
-![Settings](screenshots/settings.png)
+
+![Settings](screenshots/settings.jpeg)
+
+### 🌍 Localization (Arabic)
+
+![Today Dashboard – Arabic](screenshots/today_dashboard_ar.jpeg)
 
 ---
 
