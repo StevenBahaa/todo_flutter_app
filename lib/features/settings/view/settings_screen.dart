@@ -55,9 +55,7 @@ class SettingsScreen extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: context.primary,
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: context.bg.withOpacity(0.15),
-                                ),
+                                border: Border.all(color: context.border),
                               ),
                               child: Icon(
                                 Icons.edit,
@@ -132,6 +130,43 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                     onTap: () => _languageSheet(context),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: r.sp(18)),
+
+              _card(
+                context,
+                padding: r.sp(14),
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: context.primary),
+                      SizedBox(width: r.sp(12)),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'App version',
+                              style: TextStyle(
+                                color: context.text,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: r.sp(4)),
+                            Text(
+                              '1.0.0',
+                              style: TextStyle(
+                                color: context.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

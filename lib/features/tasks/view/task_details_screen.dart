@@ -172,6 +172,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     final r = R(context);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: context.bg,
@@ -185,13 +186,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: c.hasChanges ? _save : null,
-        backgroundColor: c.hasChanges
-            ? context.primary
-            : context.primary.withAlpha((0.35 * 255).toInt()),
-        child: const Icon(Icons.check),
-      ),
+      floatingActionButton: isKeyboardOpen
+          ? null
+          : FloatingActionButton(
+              onPressed: c.hasChanges ? _save : null,
+              backgroundColor: c.hasChanges
+                  ? context.primary
+                  : context.primary.withAlpha((0.35 * 255).toInt()),
+              child: const Icon(Icons.check),
+            ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 680),
@@ -237,6 +240,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 onAdd: () => setState(() => c.addSubTask()),
                 onToggle: (id) => setState(() => c.toggleSubTask(id)),
                 onDelete: (id) => setState(() => c.deleteSubTask(id)),
+                onRename: (id, title) =>
+                    setState(() => c.renameSubTask(id, title)),
               ),
               SizedBox(height: r.sp(18)),
 

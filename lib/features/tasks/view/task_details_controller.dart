@@ -102,6 +102,17 @@ class TaskDetailsController {
     subTasks = subTasks.where((s) => s.id != id).toList();
   }
 
+  void renameSubTask(String id, String title) {
+    final idx = subTasks.indexWhere((s) => s.id == id);
+    if (idx == -1) return;
+
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return;
+
+    final s = subTasks[idx];
+    subTasks = [...subTasks]..[idx] = s.copyWith(title: trimmed);
+  }
+
   // ---- helpers ----
   bool _listEquals(List<String> a, List<String> b) {
     if (a.length != b.length) return false;

@@ -102,6 +102,13 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
               return due != null && due.isBefore(now) && !_isTaskDoneSmart(x);
             });
 
+            final noTasksAtAll = counts.total == 0;
+            final allDoneNoIncoming =
+                !noTasksAtAll &&
+                counts.left == 0 &&
+                groups.todayOverdueActive.isEmpty &&
+                incomingTop.isEmpty;
+
             return ListView(
               padding: EdgeInsets.fromLTRB(
                 r.sp(16),
@@ -113,9 +120,14 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
                 TodayHeader(now: now),
                 SizedBox(height: r.sp(24)),
 
-                // ✅ Empty vs momentum based on COUNTS (not group totals)
-                if (counts.total == 0) ...[
+                // ✅ Empty vs "all done" vs momentum based on COUNTS (not group totals)
+                if (noTasksAtAll) ...[
                   _todayEmptyCard(context, onAdd: () => _openQuickAdd(context)),
+                ] else if (allDoneNoIncoming) ...[
+                  _todayAllDoneCard(
+                    context,
+                    onAdd: () => _openQuickAdd(context),
+                  ),
                 ] else ...[
                   _momentumCard(
                     context,
@@ -470,6 +482,63 @@ class _TodayDashboardScreenState extends State<TodayDashboardScreen> {
           SizedBox(height: r.sp(12)),
           Text(
             t.nothingScheduled,
+            style: TextStyle(
+              color: context.text,
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
+          SizedBox(height: r.sp(6)),
+          Text(
+            t.addTaskStartDay,
+            style: TextStyle(
+              color: context.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: r.sp(12)),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add),
+              label: Text(t.addTask),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _todayAllDoneCard(BuildContext context, {VoidCallback? onAdd}) {
+    final t = AppLocalizations.of(context)!;
+    final r = R(context);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: context.success.withAlpha((0.16 * 255).toInt()),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: context.success.withAlpha((0.35 * 255).toInt()),
+              ),
+            ),
+            child: Icon(Icons.check_rounded, color: context.success),
+          ),
+          SizedBox(height: r.sp(12)),
+          Text(
+            t.allTasksDoneToday,
             style: TextStyle(
               color: context.text,
               fontWeight: FontWeight.w800,
