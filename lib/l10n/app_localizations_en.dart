@@ -250,4 +250,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tomorrow => 'Tomorrow';
+
+  @override
+  String get app_version_label => 'App version';
+
+  @override
+  String get app_version_value => '1.0.0';
 }

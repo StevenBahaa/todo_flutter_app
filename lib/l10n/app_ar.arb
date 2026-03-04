@@ -122,6 +122,7 @@
   "removePhoto": "حذف الصورة",
   "save": "حفظ",
 "tags": "الوسوم",
-"tomorrow": "بكرة"
-
+"tomorrow": "بكرة",
+"app_version_label": "إصدار التطبيق",
+"app_version_value": "1.0.0"
 }

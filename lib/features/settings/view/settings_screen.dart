@@ -149,7 +149,7 @@ class SettingsScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'App version',
+                              t.app_version_label,
                               style: TextStyle(
                                 color: context.text,
                                 fontWeight: FontWeight.w700,
@@ -157,7 +157,7 @@ class SettingsScreen extends StatelessWidget {
                             ),
                             SizedBox(height: r.sp(4)),
                             Text(
-                              '1.0.0',
+                              t.app_version_value,
                               style: TextStyle(
                                 color: context.textMuted,
                                 fontWeight: FontWeight.w600,

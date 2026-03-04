@@ -550,6 +550,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tomorrow'**
   String get tomorrow;
+
+  /// No description provided for @app_version_label.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get app_version_label;
+
+  /// No description provided for @app_version_value.
+  ///
+  /// In en, this message translates to:
+  /// **'1.0.0'**
+  String get app_version_value;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

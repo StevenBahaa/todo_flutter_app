@@ -122,6 +122,8 @@
   "removePhoto": "Remove Photo",
   "save": "Save",
 "tags": "Tags",
-"tomorrow": "Tomorrow"
+"tomorrow": "Tomorrow",
+"app_version_label": "App version",
+"app_version_value": "1.0.0"
 
 }

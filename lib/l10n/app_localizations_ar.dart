@@ -253,4 +253,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get tomorrow => 'بكرة';
+
+  @override
+  String get app_version_label => 'إصدار التطبيق';
+
+  @override
+  String get app_version_value => '1.0.0';
 }
